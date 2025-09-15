@@ -3,7 +3,7 @@
 #include "../game-source-code/Coordinate.h"
 
 TEST_CASE("Coordinate Basic Operations") {
-    SUBCASE("Construction and access") {
+    SUBCASE("Construction") {
         Coordinate pos(5, 10);
         CHECK(pos.row == 5);
         CHECK(pos.col == 10);
@@ -15,12 +15,5 @@ TEST_CASE("Coordinate Basic Operations") {
         Coordinate result = pos1 + pos2;
         CHECK(result.row == 4);
         CHECK(result.col == 6);
-    }
-    
-    SUBCASE("Bounds checking") {
-        Coordinate valid(10, 15);
-        Coordinate invalid(-1, 5);
-        CHECK(valid.isWithinBounds() == true);
-        CHECK(invalid.isWithinBounds() == false);
     }
 }

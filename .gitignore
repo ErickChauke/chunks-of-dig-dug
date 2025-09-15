@@ -1,0 +1,34 @@
+# Build directories
+build/
+release/
+
+# IDE files
+.vscode/
+.vs/
+*.user
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Executable files
+*.exe
+*.out
+*.app
+
+# Object files
+*.o
+*.obj
+
+# Debug files
+*.pdb
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Documentation
+doxygen/

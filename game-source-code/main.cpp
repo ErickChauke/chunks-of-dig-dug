@@ -31,6 +31,9 @@ public:
     
 private:
     void update() {
+        player.handleMovement(terrain);
+        player.update();
+        
         if (IsKeyPressed(KEY_ESCAPE)) {
             gameRunning = false;
         }
@@ -79,7 +82,7 @@ private:
         std::string tunnelText = "Tunnels: " + std::to_string(player.getTunnelsCreated());
         DrawText(tunnelText.c_str(), 10, SCREEN_HEIGHT - 60, 14, GREEN);
         
-        DrawText("R: Reset | ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
+        DrawText("Arrow Keys: Move | R: Reset | ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
         EndDrawing();
     }
 };

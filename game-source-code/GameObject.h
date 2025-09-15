@@ -28,4 +28,21 @@ public:
     virtual void onCollision(GameObject* other) = 0;
 };
 
+class DropItem : public GameObject, public Collidable {
+private:
+    float fallSpeed;
+    int itemType;
+
+public:
+    DropItem(Coordinate pos, int type);
+    
+    void update() override;
+    void render() override;
+    Coordinate getCollisionBounds() const override;
+    void onCollision(GameObject* other) override;
+    
+    float getFallSpeed() const;
+    void setFallSpeed(float speed);
+};
+
 #endif

@@ -30,6 +30,15 @@ void BlockGrid::initializeDefaultMap() {
         }
     }
     
+    // Add pre-made tunnels
+    for (int col = 5; col < 20; ++col) {
+        isBlocked[10][col] = false;
+    }
+    
+    for (int row = 5; row < 15; ++row) {
+        isBlocked[row][15] = false;
+    }
+    
     for (int col = 0; col < MAP_COLS; ++col) {
         isBlocked[0][col] = false;
         isBlocked[MAP_ROWS-1][col] = false;

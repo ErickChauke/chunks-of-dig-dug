@@ -13,6 +13,7 @@ private:
     Direction lastMoveDirection;
     int tunnelsCreated;
     bool isMoving;
+    float moveCooldown;
 
 public:
     Player(Coordinate startPos = Coordinate(1, 1));
@@ -20,6 +21,7 @@ public:
     void update() override;
     void render() override;
     
+    bool handleMovement(BlockGrid& terrain);
     bool moveInDirection(Direction direction, BlockGrid& terrain);
     bool digTunnel(Coordinate pos, BlockGrid& terrain);
     
@@ -31,6 +33,9 @@ public:
     Direction getLastMoveDirection() const;
     bool getIsMoving() const;
     void reset(Coordinate newPos);
+
+private:
+    bool canMove() const;
 };
 
 #endif

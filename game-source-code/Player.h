@@ -9,11 +9,16 @@
 class Player : public GameObject, public Collidable {
 private:
     float moveTimer;
+    float digEffectTimer;
     bool isDigging;
     Direction lastMoveDirection;
+    Direction currentInputDirection;
     int tunnelsCreated;
-    bool isMoving;
     float moveCooldown;
+    bool isMoving;
+    float speedMultiplier;
+    int consecutiveMoves;
+    bool canDigDiagonally;
 
 public:
     Player(Coordinate startPos = Coordinate(1, 1));
@@ -31,11 +36,21 @@ public:
     bool getIsDigging() const;
     int getTunnelsCreated() const;
     Direction getLastMoveDirection() const;
+    Direction getCurrentInputDirection() const;
     bool getIsMoving() const;
+    float getSpeedMultiplier() const;
+    
+    void setSpeedMultiplier(float multiplier);
+    void setDiagonalDigging(bool enabled);
     void reset(Coordinate newPos);
 
 private:
+    void updateMovementTimer();
+    void updateDiggingEffects();
+    void updateMovementStats();
     bool canMove() const;
+    Direction processInputBuffer();
+    float getDynamicMoveCooldown() const;
 };
 
 #endif

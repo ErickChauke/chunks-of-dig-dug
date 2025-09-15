@@ -33,3 +33,37 @@ bool DynamicsEngine::checkTerrainCollision(Coordinate position, Coordinate bound
     }
     return false;
 }
+
+void DynamicsEngine::resolveTerrainCollision(GameObject& object, const BlockGrid& terrain) {
+    Coordinate pos = object.getPosition();
+    
+    if (!pos.isWithinBounds()) {
+        object.setPosition(pos.clampToBounds());
+        return;
+    }
+    
+    if (terrain.isLocationBlocked(pos)) {
+        object.setPosition(Coordinate(1, 1));
+    }
+}
+
+std::vector<Coordinate> DynamicsEngine::getAdjacentPositions(Coordinate center) const {
+    std::vector<Coordinate> adjacent;
+    
+    for (int deltaRow = -1; deltaRow <= 1; ++deltaRow) {
+        for (int deltaCol = -1; deltaCol <= 1; ++deltaCol) {
+            if (deltaRow == 0 && deltaCol == 0) continue;
+            
+            Coordinate pos = center + Coordinate(deltaRow, deltaCol);
+            if (pos.isWithinBounds()) {
+                adjacent.push_back(pos);
+            }
+        }
+    }
+    
+    return adjacent;
+}
+
+bool DynamicsEngine::isPositionSafe(Coordinate position, const BlockGrid& terrain) const {
+    return position.isWithinBounds() && !terrain.isLocationBlocked(position);
+}

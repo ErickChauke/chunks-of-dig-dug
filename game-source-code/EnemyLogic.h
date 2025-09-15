@@ -19,6 +19,10 @@ private:
 
 public:
     EnemyLogic();
+    Direction selectNextAction(Coordinate currentPos, Coordinate playerPos, 
+                              const BlockGrid& environment);
+    bool shouldPhaseThrough(Coordinate currentPos, Coordinate playerPos, 
+                           const BlockGrid& environment);
     Coordinate getDirectionOffset(Direction dir) const;
     Direction findDirectionToward(Coordinate from, Coordinate to) const;
 };

@@ -1,9 +1,25 @@
 #include <iostream>
 #include "Coordinate.h"
+#include "BlockGrid.h"
+#include "Player.h"
 
 int main() {
-    Coordinate pos(1, 1);
-    std::cout << "Coordinate system initialized at (" << pos.row << ", " << pos.col << ")" << std::endl;
-    std::cout << "World size: " << Coordinate::WORLD_ROWS << "x" << Coordinate::WORLD_COLS << std::endl;
+    std::cout << "Underground Adventure - Player Test" << std::endl;
+    
+    BlockGrid terrain;
+    Player player(Coordinate(1, 1));
+    
+    std::cout << "Player at: (" << player.getPosition().row 
+              << ", " << player.getPosition().col << ")" << std::endl;
+    
+    bool moved = player.moveInDirection(Direction::RIGHT, terrain);
+    std::cout << "Moved right: " << (moved ? "Success" : "Failed") << std::endl;
+    std::cout << "New position: (" << player.getPosition().row 
+              << ", " << player.getPosition().col << ")" << std::endl;
+    
+    moved = player.moveInDirection(Direction::DOWN, terrain);
+    std::cout << "Dug down: " << (moved ? "Success" : "Failed") << std::endl;
+    std::cout << "Tunnels: " << player.getTunnelsCreated() << std::endl;
+    
     return 0;
 }

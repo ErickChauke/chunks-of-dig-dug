@@ -1,4 +1,6 @@
 #include "BlockGrid.h"
+#include <fstream>
+#include <iostream>
 
 BlockGrid::BlockGrid() {
     initializeDefaultMap();
@@ -30,13 +32,22 @@ void BlockGrid::initializeDefaultMap() {
         }
     }
     
-    // Add pre-made tunnels
     for (int col = 5; col < 20; ++col) {
         isBlocked[10][col] = false;
     }
     
     for (int row = 5; row < 15; ++row) {
         isBlocked[row][15] = false;
+    }
+    
+    for (int row = 15; row < 18; ++row) {
+        for (int col = 25; col < 28; ++col) {
+            isBlocked[row][col] = false;
+        }
+    }
+    
+    for (int col = 20; col < 25; ++col) {
+        isBlocked[16][col] = false;
     }
     
     for (int col = 0; col < MAP_COLS; ++col) {
@@ -86,5 +97,14 @@ int BlockGrid::countBlockedNeighbors(Coordinate center) const {
 }
 
 void BlockGrid::importMapFromFile(const std::string& filepath) {
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cout << "Warning: Could not open map file " << filepath 
+                  << ", using default map" << std::endl;
+        initializeDefaultMap();
+        return;
+    }
+    
     initializeDefaultMap();
+    file.close();
 }

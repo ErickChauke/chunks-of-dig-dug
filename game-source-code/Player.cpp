@@ -1,17 +1,44 @@
 #include "Player.h"
+#include <raylib-cpp.hpp>
 #include <iostream>
+
+const float MOVE_COOLDOWN = 0.15f;
 
 Player::Player(Coordinate startPos) 
     : GameObject(startPos), moveTimer(0.0f), isDigging(false), 
-      lastMoveDirection(Direction::NONE), tunnelsCreated(0), isMoving(false) {
+      lastMoveDirection(Direction::NONE), tunnelsCreated(0), 
+      isMoving(false), moveCooldown(MOVE_COOLDOWN) {
 }
 
 void Player::update() {
-    // Basic update
 }
 
 void Player::render() {
-    // Rendering handled by main
+}
+
+bool Player::handleMovement(BlockGrid& terrain) {
+    Direction inputDir = Direction::NONE;
+    
+    if (IsKeyDown(KEY_UP))    inputDir = Direction::UP;
+    if (IsKeyDown(KEY_DOWN))  inputDir = Direction::DOWN;
+    if (IsKeyDown(KEY_LEFT))  inputDir = Direction::LEFT;
+    if (IsKeyDown(KEY_RIGHT)) inputDir = Direction::RIGHT;
+    
+    if (inputDir != Direction::NONE && canMove()) {
+        bool moved = moveInDirection(inputDir, terrain);
+        if (moved) {
+            moveTimer = GetTime();
+            isMoving = true;
+        }
+        return moved;
+    }
+    
+    isMoving = false;
+    return false;
+}
+
+bool Player::canMove() const {
+    return (GetTime() - moveTimer) >= moveCooldown;
 }
 
 bool Player::moveInDirection(Direction direction, BlockGrid& terrain) {
@@ -64,8 +91,10 @@ bool Player::getIsMoving() const { return isMoving; }
 
 void Player::reset(Coordinate newPos) {
     position = newPos;
+    moveTimer = 0.0f;
     tunnelsCreated = 0;
     isDigging = false;
     lastMoveDirection = Direction::NONE;
+    isMoving = false;
     setActive(true);
 }

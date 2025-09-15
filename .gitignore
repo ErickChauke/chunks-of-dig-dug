@@ -33,4 +33,4 @@ Makefile
 # Documentation
 doxygen/
 
-*.sh*.sh
+*.sh

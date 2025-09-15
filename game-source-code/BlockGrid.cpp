@@ -29,4 +29,13 @@ void BlockGrid::initializeDefaultMap() {
             isBlocked[row][col] = false;
         }
     }
+    
+    for (int col = 0; col < MAP_COLS; ++col) {
+        isBlocked[0][col] = false;
+        isBlocked[MAP_ROWS-1][col] = false;
+    }
+    for (int row = 0; row < MAP_ROWS; ++row) {
+        isBlocked[row][0] = false;
+        isBlocked[row][MAP_COLS-1] = false;
+    }
 }

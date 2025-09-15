@@ -12,11 +12,12 @@ class DigDugGame {
 private:
     raylib::Window window;
     BlockGrid terrain;
+    Player player;
     bool gameRunning;
 
 public:
     DigDugGame() : window(SCREEN_WIDTH, SCREEN_HEIGHT, "Underground Adventure"),
-                   gameRunning(true) {
+                   player(Coordinate(1, 1)), gameRunning(true) {
         window.SetTargetFPS(60);
         terrain.initializeDefaultMap();
     }
@@ -32,6 +33,11 @@ private:
     void update() {
         if (IsKeyPressed(KEY_ESCAPE)) {
             gameRunning = false;
+        }
+        
+        if (IsKeyPressed(KEY_R)) {
+            player.reset(Coordinate(1, 1));
+            terrain.initializeDefaultMap();
         }
     }
     
@@ -55,8 +61,25 @@ private:
             }
         }
         
+        Coordinate pos = player.getPosition();
+        int screenX = pos.col * CELL_SIZE;
+        int screenY = pos.row * CELL_SIZE;
+        int centerX = screenX + CELL_SIZE / 2;
+        int centerY = screenY + CELL_SIZE / 2;
+        int playerSize = CELL_SIZE - 8;
+        
+        DrawCircle(centerX, centerY, playerSize / 2, YELLOW);
+        DrawCircleLines(centerX, centerY, playerSize / 2, ORANGE);
+        
         DrawText("Underground Adventure", 10, 10, 24, WHITE);
-        DrawText("ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
+        std::string posText = "Position: (" + std::to_string(pos.row) + 
+                             ", " + std::to_string(pos.col) + ")";
+        DrawText(posText.c_str(), 10, SCREEN_HEIGHT - 80, 14, WHITE);
+        
+        std::string tunnelText = "Tunnels: " + std::to_string(player.getTunnelsCreated());
+        DrawText(tunnelText.c_str(), 10, SCREEN_HEIGHT - 60, 14, GREEN);
+        
+        DrawText("R: Reset | ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
         EndDrawing();
     }
 };

@@ -1,25 +1,53 @@
+#include <raylib-cpp.hpp>
 #include <iostream>
 #include "Coordinate.h"
 #include "BlockGrid.h"
 #include "Player.h"
 
+const int SCREEN_WIDTH = 1200;
+const int SCREEN_HEIGHT = 800;
+
+class DigDugGame {
+private:
+    raylib::Window window;
+    bool gameRunning;
+
+public:
+    DigDugGame() : window(SCREEN_WIDTH, SCREEN_HEIGHT, "Underground Adventure"),
+                   gameRunning(true) {
+        window.SetTargetFPS(60);
+    }
+    
+    void run() {
+        while (!window.ShouldClose() && gameRunning) {
+            update();
+            render();
+        }
+    }
+    
+private:
+    void update() {
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            gameRunning = false;
+        }
+    }
+    
+    void render() {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        DrawText("Underground Adventure", 10, 10, 24, WHITE);
+        DrawText("ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
+        EndDrawing();
+    }
+};
+
 int main() {
-    std::cout << "Underground Adventure - Player Test" << std::endl;
-    
-    BlockGrid terrain;
-    Player player(Coordinate(1, 1));
-    
-    std::cout << "Player at: (" << player.getPosition().row 
-              << ", " << player.getPosition().col << ")" << std::endl;
-    
-    bool moved = player.moveInDirection(Direction::RIGHT, terrain);
-    std::cout << "Moved right: " << (moved ? "Success" : "Failed") << std::endl;
-    std::cout << "New position: (" << player.getPosition().row 
-              << ", " << player.getPosition().col << ")" << std::endl;
-    
-    moved = player.moveInDirection(Direction::DOWN, terrain);
-    std::cout << "Dug down: " << (moved ? "Success" : "Failed") << std::endl;
-    std::cout << "Tunnels: " << player.getTunnelsCreated() << std::endl;
-    
+    try {
+        DigDugGame game;
+        game.run();
+    } catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+    }
     return 0;
 }

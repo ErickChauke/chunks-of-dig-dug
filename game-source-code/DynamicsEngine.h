@@ -12,6 +12,7 @@ class DynamicsEngine {
 public:
     DynamicsEngine();
     
+    void processAllInteractions(const std::vector<GameObject*>& entities);
     bool checkObjectContact(const Collidable& objA, const Collidable& objB);
     bool checkTerrainCollision(Coordinate position, Coordinate bounds, const BlockGrid& terrain);
     void resolveTerrainCollision(GameObject& object, const BlockGrid& terrain);

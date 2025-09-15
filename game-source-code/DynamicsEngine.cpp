@@ -1,7 +1,28 @@
 #include "DynamicsEngine.h"
 #include "GameObject.h"
+#include <algorithm>
 
 DynamicsEngine::DynamicsEngine() {
+}
+
+void DynamicsEngine::processAllInteractions(const std::vector<GameObject*>& entities) {
+    for (size_t i = 0; i < entities.size(); ++i) {
+        if (!entities[i] || !entities[i]->isActive()) continue;
+        
+        for (size_t j = i + 1; j < entities.size(); ++j) {
+            if (!entities[j] || !entities[j]->isActive()) continue;
+            
+            Collidable* collidableA = dynamic_cast<Collidable*>(entities[i]);
+            Collidable* collidableB = dynamic_cast<Collidable*>(entities[j]);
+            
+            if (collidableA && collidableB) {
+                if (checkObjectContact(*collidableA, *collidableB)) {
+                    collidableA->onCollision(entities[j]);
+                    collidableB->onCollision(entities[i]);
+                }
+            }
+        }
+    }
 }
 
 bool DynamicsEngine::checkObjectContact(const Collidable& objA, const Collidable& objB) {

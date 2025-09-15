@@ -2,6 +2,7 @@
 #define BLOCKGRID_H
 
 #include "Coordinate.h"
+#include <string>
 
 class BlockGrid {
 private:
@@ -13,6 +14,10 @@ public:
     BlockGrid();
     bool isLocationBlocked(Coordinate spot) const;
     void clearPassageAt(Coordinate spot);
+    bool isAreaBlocked(Coordinate topLeft, Coordinate bottomRight) const;
+    void clearArea(Coordinate topLeft, Coordinate bottomRight);
+    int countBlockedNeighbors(Coordinate center) const;
+    void importMapFromFile(const std::string& filepath);
     void initializeDefaultMap();
     int getRows() const { return MAP_ROWS; }
     int getCols() const { return MAP_COLS; }

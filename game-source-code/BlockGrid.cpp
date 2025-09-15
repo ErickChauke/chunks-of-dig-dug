@@ -48,3 +48,43 @@ void BlockGrid::initializeDefaultMap() {
         isBlocked[row][MAP_COLS-1] = false;
     }
 }
+
+bool BlockGrid::isAreaBlocked(Coordinate topLeft, Coordinate bottomRight) const {
+    for (int row = topLeft.row; row <= bottomRight.row; ++row) {
+        for (int col = topLeft.col; col <= bottomRight.col; ++col) {
+            if (isLocationBlocked(Coordinate(row, col))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void BlockGrid::clearArea(Coordinate topLeft, Coordinate bottomRight) {
+    for (int row = topLeft.row; row <= bottomRight.row; ++row) {
+        for (int col = topLeft.col; col <= bottomRight.col; ++col) {
+            clearPassageAt(Coordinate(row, col));
+        }
+    }
+}
+
+int BlockGrid::countBlockedNeighbors(Coordinate center) const {
+    int count = 0;
+    
+    for (int deltaRow = -1; deltaRow <= 1; ++deltaRow) {
+        for (int deltaCol = -1; deltaCol <= 1; ++deltaCol) {
+            if (deltaRow == 0 && deltaCol == 0) continue;
+            
+            Coordinate neighbor = center + Coordinate(deltaRow, deltaCol);
+            if (isLocationBlocked(neighbor)) {
+                count++;
+            }
+        }
+    }
+    
+    return count;
+}
+
+void BlockGrid::importMapFromFile(const std::string& filepath) {
+    initializeDefaultMap();
+}

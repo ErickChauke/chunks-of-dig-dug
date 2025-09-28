@@ -3,6 +3,10 @@
 
 /**
  * @brief Handles location and movement calculations
+ * 
+ * The Coordinate class represents a position in the game world using
+ * row and column indices. Provides utilities for position arithmetic
+ * and distance calculations.
  */
 class Coordinate {
 public:

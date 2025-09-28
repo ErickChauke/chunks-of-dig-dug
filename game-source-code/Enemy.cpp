@@ -12,11 +12,13 @@ Enemy::Enemy(Coordinate startPos, EnemyType type)
     
     moveCooldown = getMoveCooldownForType();
     
+    // Set AI aggression and health based on enemy type
     if (type == EnemyType::AGGRESSIVE_MONSTER) {
         ai.setAggressive(true);
         health = 2;
     }
     
+    // Add some randomness to movement cooldown for independence
     float randomFactor = 0.8f + (std::rand() % 40) * 0.01f;
     moveCooldown *= randomFactor;
 }
@@ -29,6 +31,7 @@ void Enemy::update() {
         }
         return;
     }
+    
     updateState();
 }
 
@@ -42,6 +45,7 @@ bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
     }
     
     Direction nextMove = ai.selectNextAction(position, target, terrain);
+    
     if (nextMove == Direction::NONE) {
         return false;
     }
@@ -56,10 +60,12 @@ bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
     }
     
     Coordinate newPos = position + offset;
+    
     if (!newPos.isWithinBounds()) {
         return false;
     }
     
+    // Determine phasing state
     if (terrain.isLocationBlocked(newPos)) {
         isPhasing = true;
         currentState = EnemyState::PHASING;
@@ -71,25 +77,48 @@ bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
         }
     }
     
+    // Always allow movement for enemies (they can phase)
     position = newPos;
     currentDirection = nextMove;
     moveTimer = GetTime();
     return true;
 }
 
-Direction Enemy::getCurrentDirection() const { return currentDirection; }
-bool Enemy::getIsPhasing() const { return isPhasing; }
-EnemyType Enemy::getEnemyType() const { return enemyType; }
-EnemyState Enemy::getCurrentState() const { return currentState; }
-bool Enemy::getIsDestroyed() const { return isDestroyed; }
+Direction Enemy::getCurrentDirection() const {
+    return currentDirection;
+}
+
+bool Enemy::getIsPhasing() const {
+    return isPhasing;
+}
+
+EnemyType Enemy::getEnemyType() const {
+    return enemyType;
+}
+
+EnemyState Enemy::getCurrentState() const {
+    return currentState;
+}
+
+bool Enemy::getIsDestroyed() const {
+    return isDestroyed;
+}
 
 float Enemy::getDestroyProgress() const {
     if (!isDestroyed) return 0.0f;
     return destroyTimer / destroyDuration;
 }
 
-Coordinate Enemy::getCollisionBounds() const { return Coordinate(1, 1); }
-void Enemy::onCollision(GameObject* other) { }
+Coordinate Enemy::getCollisionBounds() const {
+    return Coordinate(1, 1);
+}
+
+void Enemy::onCollision(GameObject* other) {
+    // Handle collision with player or other objects
+    if (other) {
+        // Could implement knockback or state changes here
+    }
+}
 
 void Enemy::setAggressive(bool aggressive) {
     ai.setAggressive(aggressive);
@@ -101,16 +130,20 @@ void Enemy::setAggressive(bool aggressive) {
 
 void Enemy::takeDamage(int damage) {
     if (isDestroyed) return;
+    
     health -= damage;
     if (health <= 0) {
         destroy();
     } else {
+        // Brief stun when damaged
         currentState = EnemyState::STUNNED;
         stateTimer = GetTime();
     }
 }
 
-int Enemy::getHealth() const { return health; }
+int Enemy::getHealth() const {
+    return health;
+}
 
 void Enemy::destroy() {
     isDestroyed = true;
@@ -125,15 +158,18 @@ void Enemy::updateMovement(const BlockGrid& terrain, Coordinate playerPos) {
 
 bool Enemy::canMove() const {
     if (isDestroyed) return false;
+    
     if (currentState == EnemyState::STUNNED) {
-        return (GetTime() - stateTimer) > 0.5f;
+        return (GetTime() - stateTimer) > 0.5f; // 0.5 second stun
     }
+    
     float currentTime = GetTime();
     return (currentTime - moveTimer) >= moveCooldown;
 }
 
 void Enemy::updateState() {
     float currentTime = GetTime();
+    
     switch (currentState) {
         case EnemyState::STUNNED:
             if (currentTime - stateTimer > 0.5f) {
@@ -147,6 +183,7 @@ void Enemy::updateState() {
             break;
         case EnemyState::NORMAL:
         case EnemyState::FLEEING:
+            // Normal state management
             break;
     }
 }

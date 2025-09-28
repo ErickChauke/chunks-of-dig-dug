@@ -4,25 +4,7 @@
 #include <raylib-cpp.hpp>
 #include <vector>
 #include <string>
-#include "PowerUp.h"
-
-struct PowerUpEffect {
-    PowerUpType type;
-    float startTime;
-    float duration;
-    bool active;
-    
-    PowerUpEffect(PowerUpType t, float d) : type(t), startTime(GetTime()), 
-                                           duration(d), active(true) {}
-    
-    bool isExpired() const {
-        return (GetTime() - startTime) >= duration;
-    }
-    
-    float getTimeRemaining() const {
-        return duration - (GetTime() - startTime);
-    }
-};
+#include "PowerUpEffect.h"
 
 class UIManager {
 private:

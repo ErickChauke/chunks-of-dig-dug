@@ -20,8 +20,12 @@ const int SCREEN_WIDTH = 1200;
 const int SCREEN_HEIGHT = 800;
 const int CELL_SIZE = 40;
 
+/**
+ * @brief Main game class following single responsibility principle
+ */
 class DigDugGame {
 private:
+    // Core systems
     raylib::Window window;
     RenderManager renderer;
     UIManager uiManager;
@@ -31,6 +35,7 @@ private:
     PowerUpManager powerUpManager;
     GameStateManager stateManager;
     
+    // Game world
     BlockGrid terrain;
     Player player;
     std::vector<Enemy> enemies;
@@ -38,7 +43,9 @@ private:
     std::vector<PowerUp> powerUps;
     std::vector<Rock> rocks;
     
+    // Game state
     int score;
+    int enemiesDefeated;
     int playerLives;
     float lastHarpoonTime;
     float levelTimer;
@@ -48,7 +55,8 @@ public:
                    renderer(CELL_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT),
                    uiManager(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE),
                    player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)),
-                   score(0), playerLives(3), lastHarpoonTime(0.0f), levelTimer(0.0f) {
+                   score(0), enemiesDefeated(0), playerLives(3), 
+                   lastHarpoonTime(0.0f), levelTimer(0.0f) {
         window.SetTargetFPS(60);
         initializeNewGame();
     }
@@ -74,6 +82,11 @@ private:
             case GameState::PAUSED:
                 handlePauseState();
                 break;
+            case GameState::GAME_OVER:
+            case GameState::LEVEL_COMPLETE:
+            case GameState::VICTORY:
+                handleEndGameState();
+                break;
             default:
                 break;
         }
@@ -86,7 +99,10 @@ private:
         
         handleGameInput();
         updateGameObjects();
+        powerUpManager.update();
         checkAllCollisions();
+        checkLevelProgression();
+        spawnPowerUps();
     }
     
     void updateGameObjects() {
@@ -134,7 +150,7 @@ private:
     }
     
     bool canFireHarpoon() {
-        return (GetTime() - lastHarpoonTime) >= 1.0f;
+        return (GetTime() - lastHarpoonTime) >= powerUpManager.getHarpoonCooldown();
     }
     
     void checkAllCollisions() {
@@ -164,11 +180,27 @@ private:
         }
     }
     
+    void handleEndGameState() {
+        // Basic end game handling - will be enhanced in next commit
+    }
+    
     void initializeNewGame() {
         terrain.initializeDefaultMap();
         score = 0;
         playerLives = 3;
         levelTimer = 0.0f;
+    }
+    
+    void initializeLevel() {
+        // Basic level initialization - will be enhanced in next commit
+    }
+    
+    void checkLevelProgression() {
+        // Basic level progression - will be enhanced in next commit
+    }
+    
+    void spawnPowerUps() {
+        // Basic power-up spawning - will be enhanced in next commit
     }
     
     void render() {

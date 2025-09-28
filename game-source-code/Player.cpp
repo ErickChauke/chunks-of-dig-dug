@@ -75,6 +75,55 @@ bool Player::handleMovementWithRocks(BlockGrid& terrain, const std::vector<Rock>
     return moved;
 }
 
+bool Player::moveInDirectionWithRocks(Direction direction, BlockGrid& terrain, 
+                                     const std::vector<Rock>& rocks) {
+    Coordinate offset;
+    
+    switch (direction) {
+        case Direction::UP:    offset = Coordinate(-1, 0); break;
+        case Direction::DOWN:  offset = Coordinate(1, 0); break;
+        case Direction::LEFT:  offset = Coordinate(0, -1); break;
+        case Direction::RIGHT: offset = Coordinate(0, 1); break;
+        case Direction::NONE:  return false;
+    }
+    
+    Coordinate newPos = position + offset;
+    
+    if (!newPos.isWithinBounds()) {
+        return false;
+    }
+    
+    // Check if position is blocked by rock - rocks are solid!
+    if (isPositionBlockedByRock(newPos, rocks)) {
+        std::cout << "Player blocked by rock at (" << newPos.row << "," 
+                  << newPos.col << ")" << std::endl;
+        return false;
+    }
+    
+    lastMoveDirection = direction;
+    currentInputDirection = direction;
+    
+    if (terrain.isLocationBlocked(newPos)) {
+        if (digTunnel(newPos, terrain)) {
+            position = newPos;
+            return true;
+        }
+        return false;
+    }
+    
+    position = newPos;
+    return true;
+}
+
+bool Player::isPositionBlockedByRock(Coordinate pos, const std::vector<Rock>& rocks) const {
+    for (const auto& rock : rocks) {
+        if (rock.isActive() && rock.getPosition() == pos) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Player::moveInDirection(Direction direction, BlockGrid& terrain) {
     Coordinate offset;
     
@@ -107,53 +156,6 @@ bool Player::moveInDirection(Direction direction, BlockGrid& terrain) {
     return true;
 }
 
-bool Player::moveInDirectionWithRocks(Direction direction, BlockGrid& terrain, 
-                                     const std::vector<Rock>& rocks) {
-    Coordinate offset;
-    
-    switch (direction) {
-        case Direction::UP:    offset = Coordinate(-1, 0); break;
-        case Direction::DOWN:  offset = Coordinate(1, 0); break;
-        case Direction::LEFT:  offset = Coordinate(0, -1); break;
-        case Direction::RIGHT: offset = Coordinate(0, 1); break;
-        case Direction::NONE:  return false;
-    }
-    
-    Coordinate newPos = position + offset;
-    
-    if (!newPos.isWithinBounds()) {
-        return false;
-    }
-    
-    // Check if position is blocked by rock - rocks are solid!
-    if (isPositionBlockedByRock(newPos, rocks)) {
-        return false;
-    }
-    
-    lastMoveDirection = direction;
-    currentInputDirection = direction;
-    
-    if (terrain.isLocationBlocked(newPos)) {
-        if (digTunnel(newPos, terrain)) {
-            position = newPos;
-            return true;
-        }
-        return false;
-    }
-    
-    position = newPos;
-    return true;
-}
-
-bool Player::isPositionBlockedByRock(Coordinate pos, const std::vector<Rock>& rocks) const {
-    for (const auto& rock : rocks) {
-        if (rock.isActive() && rock.getPosition() == pos) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool Player::digTunnel(Coordinate pos, BlockGrid& terrain) {
     if (!pos.isWithinBounds()) {
         return false;
@@ -182,12 +184,29 @@ void Player::onCollision(GameObject* other) {
     }
 }
 
-bool Player::getIsDigging() const { return isDigging; }
-int Player::getTunnelsCreated() const { return tunnelsCreated; }
-Direction Player::getLastMoveDirection() const { return lastMoveDirection; }
-Direction Player::getCurrentInputDirection() const { return currentInputDirection; }
-bool Player::getIsMoving() const { return isMoving; }
-float Player::getSpeedMultiplier() const { return speedMultiplier; }
+bool Player::getIsDigging() const {
+    return isDigging;
+}
+
+int Player::getTunnelsCreated() const {
+    return tunnelsCreated;
+}
+
+Direction Player::getLastMoveDirection() const {
+    return lastMoveDirection;
+}
+
+Direction Player::getCurrentInputDirection() const {
+    return currentInputDirection;
+}
+
+bool Player::getIsMoving() const {
+    return isMoving;
+}
+
+float Player::getSpeedMultiplier() const {
+    return speedMultiplier;
+}
 
 bool Player::canFireHarpoon() const {
     float currentTime = GetTime();

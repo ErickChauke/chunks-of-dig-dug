@@ -39,6 +39,7 @@ private:
     void spawnEnemies(std::vector<Enemy>& enemies);
     void spawnRocks(std::vector<Rock>& rocks, const BlockGrid& terrain);
     Coordinate findValidSpawnPosition(const Player& player) const;
+    Coordinate findValidRockPosition(const std::vector<Coordinate>& existingRocks) const;
     std::string getLevelMapFile(int level) const;
 };
 

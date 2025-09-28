@@ -19,7 +19,15 @@ void UIManager::drawHUD(int level, int score, int targetScore, int lives,
     
     int row2Y = cellSize + 10;
     DrawText(("Score: " + std::to_string(score)).c_str(), 10, row2Y, 18, GREEN);
+    DrawText(("Target: " + std::to_string(targetScore)).c_str(), 
+             180, row2Y, 18, YELLOW);
     DrawText(("Lives: " + std::to_string(lives)).c_str(), 350, row2Y, 18, RED);
+    
+    int minutes = static_cast<int>(levelTimer) / 60;
+    int seconds = static_cast<int>(levelTimer) % 60;
+    DrawText(("Time: " + std::to_string(minutes) + ":" + 
+             (seconds < 10 ? "0" : "") + std::to_string(seconds)).c_str(), 
+             480, row2Y, 18, WHITE);
 }
 
 void UIManager::drawWeaponCooldown(bool canFire, float progress, int x, int y) {
@@ -63,4 +71,25 @@ void UIManager::drawGameOverScreen(int score, int level) {
     DrawText("GAME OVER", screenWidth/2 - 100, screenHeight/2 - 50, 32, RED);
     DrawText(("Final Score: " + std::to_string(score)).c_str(), 
              screenWidth/2 - 80, screenHeight/2, 20, WHITE);
+}
+
+void UIManager::drawLevelCompleteScreen(int score, float levelTimer) {
+    DrawRectangle(0, hudHeight, screenWidth, screenHeight - hudHeight, 
+                 ColorAlpha(BLACK, 0.7f));
+    DrawText("LEVEL COMPLETE!", screenWidth/2 - 130, 
+             screenHeight/2 - 50, 28, GREEN);
+    DrawText(("Score: " + std::to_string(score)).c_str(), 
+             screenWidth/2 - 60, screenHeight/2, 20, WHITE);
+}
+
+void UIManager::drawVictoryScreen(int score) {
+    DrawRectangle(0, 0, screenWidth, screenHeight, ColorAlpha(PURPLE, 0.8f));
+    DrawText("VICTORY!", screenWidth/2 - 80, screenHeight/2 - 80, 40, GOLD);
+    DrawText(("Final Score: " + std::to_string(score)).c_str(), 
+             screenWidth/2 - 80, screenHeight/2 + 10, 18, YELLOW);
+}
+
+void UIManager::drawPowerUpStatus(const std::vector<PowerUpEffect>& effects, 
+                                 int startX, int y) {
+    // Implementation for power-up status display
 }

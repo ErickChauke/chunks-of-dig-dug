@@ -4,7 +4,25 @@
 #include <raylib-cpp.hpp>
 #include <vector>
 #include <string>
-#include "PowerUpEffect.h"
+#include "PowerUp.h"
+
+struct PowerUpEffect {
+    PowerUpType type;
+    float startTime;
+    float duration;
+    bool active;
+    
+    PowerUpEffect(PowerUpType t, float d) : type(t), startTime(GetTime()), 
+                                           duration(d), active(true) {}
+    
+    bool isExpired() const {
+        return (GetTime() - startTime) >= duration;
+    }
+    
+    float getTimeRemaining() const {
+        return duration - (GetTime() - startTime);
+    }
+};
 
 class UIManager {
 private:
@@ -24,8 +42,12 @@ public:
     void drawMenu();
     void drawPauseOverlay();
     void drawGameOverScreen(int score, int level);
+    void drawLevelCompleteScreen(int score, float levelTimer);
+    void drawVictoryScreen(int score);
     
 private:
+    void drawPowerUpStatus(const std::vector<PowerUpEffect>& effects, 
+                          int startX, int y);
     void drawWeaponCooldown(bool canFire, float progress, int x, int y);
 };
 

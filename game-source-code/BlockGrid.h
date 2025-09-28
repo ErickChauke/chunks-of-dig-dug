@@ -42,16 +42,49 @@ public:
      */
     void clearPassageAt(Coordinate spot);
     
+    /**
+     * @brief Check if an area contains any blocks
+     * @param topLeft Top-left corner of area
+     * @param bottomRight Bottom-right corner of area
+     * @return true if any blocks in area, false if all clear
+     */
     bool isAreaBlocked(Coordinate topLeft, Coordinate bottomRight) const;
+    
+    /**
+     * @brief Clear all blocks in an area
+     * @param topLeft Top-left corner of area
+     * @param bottomRight Bottom-right corner of area
+     */
     void clearArea(Coordinate topLeft, Coordinate bottomRight);
+    
+    /**
+     * @brief Count blocked neighbors around a coordinate
+     * @param center Center coordinate to check around
+     * @return int Number of blocked neighbors (0-8)
+     */
     int countBlockedNeighbors(Coordinate center) const;
+    
+    /**
+     * @brief Load map layout from file
+     * @param filepath Path to map file
+     */
     void importMapFromFile(const std::string& filepath);
+    
+    /**
+     * @brief Initialize with default solid earth layout for smaller world
+     */
     void initializeDefaultMap();
 
+    /**
+     * @brief Get spawn positions from loaded map
+     */
     std::vector<Coordinate> getPlayerSpawns() const;
     std::vector<Coordinate> getEnemySpawns() const;
     std::vector<Coordinate> getRockSpawns() const;
     
+    /**
+     * @brief Get world dimensions
+     */
     int getRows() const { return MAP_ROWS; }
     int getCols() const { return MAP_COLS; }
 };

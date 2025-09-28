@@ -107,7 +107,13 @@ private:
     
     void updateGameObjects() {
         player.update();
-        
+        updateEnemies();
+        updateHarpoons();
+        updatePowerUps();
+        updateRocks();
+    }
+    
+    void updateEnemies() {
         for (auto& enemy : enemies) {
             if (enemy.isActive()) {
                 if (!enemy.getIsDestroyed()) {
@@ -116,7 +122,9 @@ private:
                 enemy.update();
             }
         }
-        
+    }
+    
+    void updateHarpoons() {
         harpoons.erase(
             std::remove_if(harpoons.begin(), harpoons.end(),
                 [](Harpoon& h) { 
@@ -128,7 +136,9 @@ private:
                 }),
             harpoons.end()
         );
-        
+    }
+    
+    void updatePowerUps() {
         powerUps.erase(
             std::remove_if(powerUps.begin(), powerUps.end(),
                 [](PowerUp& p) {
@@ -140,7 +150,9 @@ private:
                 }),
             powerUps.end()
         );
-        
+    }
+    
+    void updateRocks() {
         for (auto& rock : rocks) {
             if (rock.isActive()) {
                 rock.update();
@@ -150,6 +162,7 @@ private:
     }
     
     void handleGameInput() {
+        // Use the new rock-aware movement function
         player.handleMovementWithRocks(terrain, rocks);
         
         if (inputManager.isHarpoonPressed() && canFireHarpoon()) {
@@ -209,48 +222,6 @@ private:
         }
     }
     
-    void handleMenuState() {
-        if (inputManager.getMenuInput() == InputAction::CONFIRM) {
-            stateManager.changeState(GameState::PLAYING);
-        }
-    }
-    
-    void handlePauseState() {
-        if (inputManager.getPauseInput() == InputAction::CONFIRM) {
-            stateManager.changeState(GameState::PLAYING);
-        }
-    }
-    
-    void handleEndGameState() {
-        // Basic end game handling - will be enhanced in next commit
-    }
-    
-    void initializeNewGame() {
-        terrain.initializeDefaultMap();
-        score = 0;
-        playerLives = 3;
-        levelTimer = 0.0f;
-    }
-    
-    void initializeLevel() {
-        // Basic level initialization - will be enhanced in next commit
-    }
-    
-    void checkLevelProgression() {
-        // Basic level progression - will be enhanced in next commit
-    }
-    
-    void spawnPowerUps() {
-        // Basic power-up spawning - will be enhanced in next commit
-    }
-    
-    
-    void restartGame() {
-        stateManager.changeState(GameState::PLAYING);
-        initializeNewGame();
-    }
-
-    
     void playerHit() {
         playerLives--;
         std::cout << "Player hit! Lives remaining: " << playerLives << std::endl;
@@ -261,7 +232,113 @@ private:
             player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
         }
     }
-
+    
+    void checkLevelProgression() {
+        if (levelManager.isLevelComplete(enemies, score)) {
+            stateManager.changeState(GameState::LEVEL_COMPLETE);
+            score += levelManager.calculateTimeBonus(levelTimer, 
+                                                   levelManager.getCurrentLevel());
+            std::cout << "Level " << levelManager.getCurrentLevel() 
+                      << " Complete!" << std::endl;
+        }
+    }
+    
+    void spawnPowerUps() {
+        if (levelManager.shouldSpawnPowerUp(levelTimer)) {
+            powerUps.push_back(levelManager.createRandomPowerUp());
+            levelManager.updatePowerUpSpawnTime(levelTimer);
+        }
+    }
+    
+    void handleMenuState() {
+        InputAction action = inputManager.getMenuInput();
+        switch (action) {
+            case InputAction::CONFIRM:
+                stateManager.changeState(GameState::PLAYING);
+                initializeLevel();
+                break;
+            case InputAction::EXIT:
+                window.Close();
+                break;
+            default:
+                break;
+        }
+    }
+    
+    void handlePauseState() {
+        InputAction action = inputManager.getPauseInput();
+        switch (action) {
+            case InputAction::CONFIRM:
+                stateManager.changeState(GameState::PLAYING);
+                break;
+            case InputAction::EXIT:
+                window.Close();
+                break;
+            default:
+                break;
+        }
+    }
+    
+    void handleEndGameState() {
+        InputAction action = inputManager.getEndGameInput();
+        switch (action) {
+            case InputAction::RESTART:
+                restartGame();
+                break;
+            case InputAction::CONFIRM:
+                if (stateManager.getCurrentState() == GameState::LEVEL_COMPLETE) {
+                    nextLevel();
+                }
+                break;
+            case InputAction::EXIT:
+                window.Close();
+                break;
+            default:
+                break;
+        }
+    }
+    
+    void initializeNewGame() {
+        levelManager.reset();
+        powerUpManager.reset();
+        score = 0;
+        playerLives = 3;
+        enemiesDefeated = 0;
+        levelTimer = 0.0f;
+        lastHarpoonTime = 0.0f;
+        initializeLevel();
+    }
+    
+    void initializeLevel() {
+        levelManager.initializeLevel(levelManager.getCurrentLevel(), terrain, 
+                                   player, enemies, powerUps, rocks);
+        levelTimer = 0.0f;
+        harpoons.clear();
+        
+        // Reset speed if it was modified by power-ups
+        if (!powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST)) {
+            player.setSpeedMultiplier(1.0f);
+        }
+    }
+    
+    void nextLevel() {
+        levelManager.nextLevel();
+        powerUpManager.reset();
+        player.setSpeedMultiplier(1.0f);
+        
+        if (levelManager.getCurrentLevel() > 10) {
+            stateManager.changeState(GameState::VICTORY);
+        } else {
+            stateManager.changeState(GameState::PLAYING);
+            initializeLevel();
+        }
+    }
+    
+    void restartGame() {
+        stateManager.changeState(GameState::PLAYING);
+        initializeNewGame();
+    }
+    
     void render() {
         BeginDrawing();
         ClearBackground(BLACK);
@@ -279,7 +356,14 @@ private:
                 break;
             case GameState::GAME_OVER:
                 drawGameScene();
-                uiManager.drawGameOverScreen(score, 1);
+                uiManager.drawGameOverScreen(score, levelManager.getCurrentLevel());
+                break;
+            case GameState::LEVEL_COMPLETE:
+                drawGameScene();
+                uiManager.drawLevelCompleteScreen(score, levelTimer);
+                break;
+            case GameState::VICTORY:
+                uiManager.drawVictoryScreen(score);
                 break;
         }
         
@@ -287,15 +371,26 @@ private:
     }
     
     void drawGameScene() {
-        std::vector<PowerUpEffect> emptyEffects;
-        uiManager.drawHUD(1, score, 1000, playerLives, levelTimer, 
-                         emptyEffects, canFireHarpoon(), 1.0f);
+        float harpoonProgress = canFireHarpoon() ? 1.0f : 
+                               (GetTime() - lastHarpoonTime) / 
+                               powerUpManager.getHarpoonCooldown();
+        
+        uiManager.drawHUD(levelManager.getCurrentLevel(), score, 
+                         levelManager.getTargetScore(), playerLives, 
+                         levelTimer, powerUpManager.getActivePowerUps(),
+                         canFireHarpoon(), harpoonProgress);
         
         renderer.drawTerrain(terrain);
-        renderer.drawPlayer(player, false, player.getIsDigging());
         renderer.drawEnemies(enemies);
-        renderer.drawHarpoons(harpoons, false);
+        renderer.drawHarpoons(harpoons, powerUpManager.getHasPowerShot());
+        renderer.drawPowerUps(powerUps);
+        renderer.drawPlayer(player, 
+                          powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST),
+                          player.getIsDigging());
         renderer.drawRocks(rocks, player);
+        
+        uiManager.drawPowerUpNotification(powerUpManager.getPowerUpMessage(), 
+                                        powerUpManager.getTimeSinceLastCollection());
     }
 };
 

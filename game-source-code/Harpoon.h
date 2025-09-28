@@ -37,6 +37,9 @@ public:
     HarpoonState getState() const;
     const std::vector<Coordinate>& getSegments() const;
     
+    /**
+     * @brief Update harpoon to stay connected to player
+     */
     void updatePlayerConnection();
 
 private:

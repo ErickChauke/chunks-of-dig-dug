@@ -93,6 +93,81 @@ public:
         removeInactiveObjects();
     }
     
+    void checkWinConditions() {
+        // Level complete if score target reached or all enemies defeated
+        if (score >= targetScore || allEnemiesDefeated()) {
+            completeLevel();
+        }
+    }
+    
+    void checkLoseConditions() {
+        // Game over if no lives left
+        if (playerLives <= 0) {
+            currentState = GameState::GAME_OVER;
+            std::cout << "Game Over! Final Score: " << score << std::endl;
+        }
+    }
+    
+    void completeLevel() {
+        if (!levelComplete) {
+            levelComplete = true;
+            currentState = GameState::LEVEL_COMPLETE;
+            
+            // Calculate time bonus
+            int timeBonus = calculateTimeBonus();
+            score += timeBonus;
+            
+            std::cout << "Level " << currentLevel << " Complete!" << std::endl;
+            std::cout << "Time Bonus: " << timeBonus << std::endl;
+            std::cout << "Total Score: " << score << std::endl;
+            
+            // Check for game victory
+            if (currentLevel >= 10) {
+                currentState = GameState::VICTORY;
+                std::cout << "Congratulations! You've completed all levels!" << std::endl;
+            }
+        }
+    }
+    
+    void nextLevel() {
+        if (currentState == GameState::LEVEL_COMPLETE) {
+            currentLevel++;
+            targetScore += 1000 * currentLevel;
+            levelComplete = false;
+            levelTimer = 0.0f;
+            
+            // Clear objects for new level
+            cleanup();
+            
+            initializeGame();
+        }
+    }
+    
+    void pauseGame() {
+        if (currentState == GameState::PLAYING) {
+            currentState = GameState::PAUSED;
+            std::cout << "Game Paused" << std::endl;
+        }
+    }
+    
+    void resumeGame() {
+        if (currentState == GameState::PAUSED) {
+            currentState = GameState::PLAYING;
+            std::cout << "Game Resumed" << std::endl;
+        }
+    }
+    
+    void restartGame() {
+        currentLevel = 1;
+        playerLives = 3;
+        score = 0;
+        targetScore = 1000;
+        levelComplete = false;
+        cleanup();
+        initializeGame();
+        std::cout << "Game Restarted" << std::endl;
+    }
+    
     void addGameObject(GameObject* obj) {
         if (obj) {
             gameObjects.push_back(obj);
@@ -107,6 +182,7 @@ public:
         );
     }
     
+    // Getters
     BlockGrid& getTerrain() { return terrain; }
     DynamicsEngine& getPhysics() { return physics; }
     GameState getCurrentState() const { return currentState; }
@@ -115,22 +191,26 @@ public:
     int getTargetScore() const { return targetScore; }
     int getLives() const { return playerLives; }
     float getLevelTimer() const { return levelTimer; }
+    float getBonusMultiplier() const { return bonusMultiplier; }
     
+    // Score management
+    void addScore(int points) { 
+        score += static_cast<int>(points * bonusMultiplier);
+    }
+    
+    void loseLife() { 
+        if (playerLives > 0) {
+            playerLives--;
+            std::cout << "Life lost! Lives remaining: " << playerLives << std::endl;
+        }
+    }
+    
+    void addExtraLife() {
+        playerLives++;
+        std::cout << "Extra life gained! Lives: " << playerLives << std::endl;
+    }
+
 private:
-    void checkWinConditions() {
-        if (score >= targetScore || allEnemiesDefeated()) {
-            currentState = GameState::LEVEL_COMPLETE;
-            std::cout << "Level " << currentLevel << " Complete!" << std::endl;
-        }
-    }
-    
-    void checkLoseConditions() {
-        if (playerLives <= 0) {
-            currentState = GameState::GAME_OVER;
-            std::cout << "Game Over! Final Score: " << score << std::endl;
-        }
-    }
-    
     bool allEnemiesDefeated() {
         for (auto* obj : gameObjects) {
             Enemy* enemy = dynamic_cast<Enemy*>(obj);
@@ -139,6 +219,13 @@ private:
             }
         }
         return true;
+    }
+    
+    int calculateTimeBonus() {
+        // Bonus decreases with time taken
+        float maxTime = 180.0f; // 3 minutes
+        float timeRatio = std::max(0.0f, (maxTime - levelTimer) / maxTime);
+        return static_cast<int>(1000 * timeRatio * bonusMultiplier);
     }
     
     void cleanup() {

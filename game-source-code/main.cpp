@@ -159,18 +159,28 @@ private:
         if (inputManager.isPausePressed()) {
             stateManager.changeState(GameState::PAUSED);
         }
+        
+        if (inputManager.isRestartPressed()) {
+            restartGame();
+        }
+        
+        if (inputManager.isExitPressed()) {
+            window.Close();
+        }
     }
     
     void fireHarpoon() {
         Direction playerDir = player.getLastMoveDirection();
         if (playerDir != Direction::NONE) {
-            harpoons.emplace_back(player.getPosition(), playerDir, &player);
+            Coordinate playerPos = player.getPosition();
+            harpoons.emplace_back(playerPos, playerDir, &player);
             lastHarpoonTime = GetTime();
         }
     }
     
     bool canFireHarpoon() {
-        return (GetTime() - lastHarpoonTime) >= powerUpManager.getHarpoonCooldown();
+        float currentTime = GetTime();
+        return (currentTime - lastHarpoonTime) >= powerUpManager.getHarpoonCooldown();
     }
     
     void checkAllCollisions() {
@@ -223,6 +233,12 @@ private:
         // Basic power-up spawning - will be enhanced in next commit
     }
     
+    
+    void restartGame() {
+        stateManager.changeState(GameState::PLAYING);
+        initializeNewGame();
+    }
+
     void render() {
         BeginDrawing();
         ClearBackground(BLACK);

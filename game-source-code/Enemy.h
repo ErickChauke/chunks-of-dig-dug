@@ -51,9 +51,27 @@ public:
     Coordinate getCollisionBounds() const override;
     void onCollision(GameObject* other) override;
     
+    /**
+     * @brief Set enemy to aggressive mode
+     * @param aggressive Whether to be aggressive
+     */
     void setAggressive(bool aggressive);
+    
+    /**
+     * @brief Damage the enemy
+     * @param damage Amount of damage
+     */
     void takeDamage(int damage);
+    
+    /**
+     * @brief Get enemy health
+     * @return int Current health
+     */
     int getHealth() const;
+    
+    /**
+     * @brief Destroy enemy with animation
+     */
     void destroy();
 
 private:

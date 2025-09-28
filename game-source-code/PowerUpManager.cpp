@@ -35,32 +35,38 @@ void PowerUpManager::collectPowerUp(const PowerUp& powerUp, Player& player,
         case PowerUpType::EXTRA_LIFE:
             playerLives++;
             powerUpMessage = "Extra Life Gained!";
+            std::cout << "Extra Life! Lives: " << playerLives << std::endl;
             break;
             
         case PowerUpType::SCORE_MULTIPLIER:
             score += 500;
             powerUpMessage = "+500 Score Bonus!";
+            std::cout << "Score Bonus! +500 points" << std::endl;
             break;
             
         case PowerUpType::RAPID_FIRE:
             activePowerUps.emplace_back(PowerUpType::RAPID_FIRE, 15.0f);
             powerUpMessage = "Rapid Fire Activated!";
+            std::cout << "Rapid Fire activated for 15 seconds!" << std::endl;
             break;
             
         case PowerUpType::POWER_SHOT:
             activePowerUps.emplace_back(PowerUpType::POWER_SHOT, 20.0f);
             powerUpMessage = "Power Shot Activated!";
+            std::cout << "Power Shot activated for 20 seconds!" << std::endl;
             break;
             
         case PowerUpType::SPEED_BOOST:
             activePowerUps.emplace_back(PowerUpType::SPEED_BOOST, 12.0f);
             player.setSpeedMultiplier(0.6f);
             powerUpMessage = "Speed Boost Activated!";
+            std::cout << "Speed Boost activated for 12 seconds!" << std::endl;
             break;
             
         case PowerUpType::INVINCIBILITY:
             activePowerUps.emplace_back(PowerUpType::INVINCIBILITY, 10.0f);
             powerUpMessage = "Invincibility Activated!";
+            std::cout << "Invincibility activated for 10 seconds!" << std::endl;
             break;
             
         default:

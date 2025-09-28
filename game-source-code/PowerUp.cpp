@@ -10,6 +10,7 @@ PowerUp::PowerUp(Coordinate pos, PowerUpType powerType)
 void PowerUp::update() {
     if (!active || collected) return;
     
+    // Check if power-up should despawn
     if (shouldDespawn()) {
         setActive(false);
     }
@@ -24,6 +25,7 @@ Coordinate PowerUp::getCollisionBounds() const {
 }
 
 void PowerUp::onCollision(GameObject* other) {
+    // Handle collision with player
     if (other && !collected) {
         collect();
     }

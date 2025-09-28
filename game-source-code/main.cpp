@@ -1,8 +1,20 @@
 #include <raylib-cpp.hpp>
 #include <iostream>
+#include <vector>
 #include "Coordinate.h"
 #include "BlockGrid.h"
 #include "Player.h"
+#include "Enemy.h"
+#include "Harpoon.h"
+#include "PowerUp.h"
+#include "Rock.h"
+#include "RenderManager.h"
+#include "UIManager.h"
+#include "InputManager.h"
+#include "CollisionManager.h"
+#include "LevelManager.h"
+#include "PowerUpManager.h"
+#include "GameState.h"
 
 const int SCREEN_WIDTH = 1200;
 const int SCREEN_HEIGHT = 800;
@@ -11,138 +23,188 @@ const int CELL_SIZE = 40;
 class DigDugGame {
 private:
     raylib::Window window;
+    RenderManager renderer;
+    UIManager uiManager;
+    InputManager inputManager;
+    CollisionManager collisionManager;
+    LevelManager levelManager;
+    PowerUpManager powerUpManager;
+    GameStateManager stateManager;
+    
     BlockGrid terrain;
     Player player;
-    bool gameRunning;
+    std::vector<Enemy> enemies;
+    std::vector<Harpoon> harpoons;
+    std::vector<PowerUp> powerUps;
+    std::vector<Rock> rocks;
+    
+    int score;
+    int playerLives;
+    float lastHarpoonTime;
+    float levelTimer;
 
 public:
     DigDugGame() : window(SCREEN_WIDTH, SCREEN_HEIGHT, "Underground Adventure"),
-                   player(Coordinate(1, 1)), gameRunning(true) {
+                   renderer(CELL_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT),
+                   uiManager(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE),
+                   player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)),
+                   score(0), playerLives(3), lastHarpoonTime(0.0f), levelTimer(0.0f) {
         window.SetTargetFPS(60);
-        terrain.initializeDefaultMap();
+        initializeNewGame();
     }
     
     void run() {
-        while (!window.ShouldClose() && gameRunning) {
+        while (!window.ShouldClose()) {
             update();
             render();
         }
     }
-    
+
 private:
     void update() {
-        handleInput();
-        player.update();
+        float deltaTime = GetFrameTime();
+        
+        switch (stateManager.getCurrentState()) {
+            case GameState::MENU:
+                handleMenuState();
+                break;
+            case GameState::PLAYING:
+                updateGameplay(deltaTime);
+                break;
+            case GameState::PAUSED:
+                handlePauseState();
+                break;
+            default:
+                break;
+        }
+        
+        stateManager.update(deltaTime);
     }
     
-    void handleInput() {
-        player.handleMovement(terrain);
+    void updateGameplay(float deltaTime) {
+        levelTimer += deltaTime;
         
-        if (IsKeyPressed(KEY_ESCAPE)) {
-            gameRunning = false;
+        handleGameInput();
+        updateGameObjects();
+        checkAllCollisions();
+    }
+    
+    void updateGameObjects() {
+        player.update();
+        
+        for (auto& enemy : enemies) {
+            if (enemy.isActive()) {
+                enemy.moveToward(player.getPosition(), terrain);
+                enemy.update();
+            }
         }
         
-        if (IsKeyPressed(KEY_R)) {
-            player.reset(Coordinate(1, 1));
-            terrain.initializeDefaultMap();
+        for (auto& harpoon : harpoons) {
+            if (harpoon.isActive()) {
+                harpoon.update();
+            }
         }
+        
+        for (auto& rock : rocks) {
+            if (rock.isActive()) {
+                rock.update();
+                rock.applyGravity(terrain);
+            }
+        }
+    }
+    
+    void handleGameInput() {
+        player.handleMovementWithRocks(terrain, rocks);
+        
+        if (inputManager.isHarpoonPressed() && canFireHarpoon()) {
+            fireHarpoon();
+        }
+        
+        if (inputManager.isPausePressed()) {
+            stateManager.changeState(GameState::PAUSED);
+        }
+    }
+    
+    void fireHarpoon() {
+        Direction playerDir = player.getLastMoveDirection();
+        if (playerDir != Direction::NONE) {
+            harpoons.emplace_back(player.getPosition(), playerDir, &player);
+            lastHarpoonTime = GetTime();
+        }
+    }
+    
+    bool canFireHarpoon() {
+        return (GetTime() - lastHarpoonTime) >= 1.0f;
+    }
+    
+    void checkAllCollisions() {
+        if (collisionManager.checkPlayerEnemyCollision(player, enemies)) {
+            playerLives--;
+            if (playerLives > 0) {
+                player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
+            } else {
+                stateManager.changeState(GameState::GAME_OVER);
+            }
+        }
+        
+        int enemiesDefeated = 0;
+        collisionManager.checkHarpoonEnemyCollisions(harpoons, enemies, score, 
+                                                   enemiesDefeated, 1);
+    }
+    
+    void handleMenuState() {
+        if (inputManager.getMenuInput() == InputAction::CONFIRM) {
+            stateManager.changeState(GameState::PLAYING);
+        }
+    }
+    
+    void handlePauseState() {
+        if (inputManager.getPauseInput() == InputAction::CONFIRM) {
+            stateManager.changeState(GameState::PLAYING);
+        }
+    }
+    
+    void initializeNewGame() {
+        terrain.initializeDefaultMap();
+        score = 0;
+        playerLives = 3;
+        levelTimer = 0.0f;
     }
     
     void render() {
         BeginDrawing();
         ClearBackground(BLACK);
         
-        drawTerrain();
-        drawPlayer();
-        drawUI();
+        switch (stateManager.getCurrentState()) {
+            case GameState::MENU:
+                uiManager.drawMenu();
+                break;
+            case GameState::PLAYING:
+            case GameState::PAUSED:
+                drawGameScene();
+                if (stateManager.getCurrentState() == GameState::PAUSED) {
+                    uiManager.drawPauseOverlay();
+                }
+                break;
+            case GameState::GAME_OVER:
+                drawGameScene();
+                uiManager.drawGameOverScreen(score, 1);
+                break;
+        }
         
         EndDrawing();
     }
     
-    void drawTerrain() {
-        for (int row = 0; row < Coordinate::WORLD_ROWS; ++row) {
-            for (int col = 0; col < Coordinate::WORLD_COLS; ++col) {
-                Coordinate pos(row, col);
-                int screenX = col * CELL_SIZE;
-                int screenY = row * CELL_SIZE;
-                
-                if (terrain.isLocationBlocked(pos)) {
-                    DrawRectangle(screenX, screenY, CELL_SIZE, CELL_SIZE, BROWN);
-                    DrawRectangleLines(screenX, screenY, CELL_SIZE, CELL_SIZE, DARKBROWN);
-                    
-                    DrawCircle(screenX + CELL_SIZE/4, screenY + CELL_SIZE/4, 2, DARKBROWN);
-                    DrawCircle(screenX + 3*CELL_SIZE/4, screenY + 3*CELL_SIZE/4, 1, DARKBROWN);
-                } else {
-                    DrawRectangle(screenX, screenY, CELL_SIZE, CELL_SIZE, DARKGRAY);
-                    DrawRectangleLines(screenX, screenY, CELL_SIZE, CELL_SIZE, GRAY);
-                    
-                    DrawCircle(screenX + CELL_SIZE/2, screenY + CELL_SIZE/2, 1, LIGHTGRAY);
-                }
-            }
-        }
+    void drawGameScene() {
+        std::vector<PowerUpEffect> emptyEffects;
+        uiManager.drawHUD(1, score, 1000, playerLives, levelTimer, 
+                         emptyEffects, canFireHarpoon(), 1.0f);
         
-        DrawRectangleLines(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
-    }
-    
-    void drawPlayer() {
-        Coordinate pos = player.getPosition();
-        int screenX = pos.col * CELL_SIZE;
-        int screenY = pos.row * CELL_SIZE;
-        int centerX = screenX + CELL_SIZE / 2;
-        int centerY = screenY + CELL_SIZE / 2;
-        int playerSize = CELL_SIZE - 8;
-        
-        DrawCircle(centerX, centerY, playerSize / 2, YELLOW);
-        DrawCircleLines(centerX, centerY, playerSize / 2, ORANGE);
-        
-        int eyeSize = 3;
-        int eyeOffset = playerSize / 6;
-        DrawCircle(centerX - eyeOffset, centerY - eyeOffset, eyeSize, BLACK);
-        DrawCircle(centerX + eyeOffset, centerY - eyeOffset, eyeSize, BLACK);
-        
-        DrawCircleLines(centerX, centerY + eyeOffset/2, eyeOffset, BLACK);
-        
-        Direction lastDir = player.getLastMoveDirection();
-        if (lastDir != Direction::NONE) {
-            int indicatorX = centerX;
-            int indicatorY = centerY;
-            
-            switch (lastDir) {
-                case Direction::UP:    indicatorY -= playerSize / 3; break;
-                case Direction::DOWN:  indicatorY += playerSize / 3; break;
-                case Direction::LEFT:  indicatorX -= playerSize / 3; break;
-                case Direction::RIGHT: indicatorX += playerSize / 3; break;
-                case Direction::NONE:  break;
-            }
-            
-            DrawCircle(indicatorX, indicatorY, 2, WHITE);
-        }
-        
-        if (player.getIsDigging()) {
-            float pulse = sin(GetTime() * 10.0f) * 0.4f + 0.6f;
-            DrawCircleLines(centerX, centerY, playerSize / 2 + 6, ColorAlpha(ORANGE, pulse));
-        }
-    }
-    
-    void drawUI() {
-        DrawText("Underground Adventure", 10, 10, 24, WHITE);
-        
-        Coordinate pos = player.getPosition();
-        std::string posText = "Position: (" + std::to_string(pos.row) + 
-                             ", " + std::to_string(pos.col) + ")";
-        DrawText(posText.c_str(), 10, SCREEN_HEIGHT - 80, 14, WHITE);
-        
-        std::string tunnelText = "Tunnels: " + std::to_string(player.getTunnelsCreated());
-        DrawText(tunnelText.c_str(), 10, SCREEN_HEIGHT - 60, 14, GREEN);
-        
-        DrawText("Arrow Keys: Move | R: Reset | ESC: Exit", 10, SCREEN_HEIGHT - 40, 14, YELLOW);
-        
-        if (player.getIsMoving()) {
-            DrawText("Moving", SCREEN_WIDTH - 80, 10, 14, GREEN);
-        }
-        if (player.getIsDigging()) {
-            DrawText("Digging", SCREEN_WIDTH - 80, 30, 14, ORANGE);
-        }
+        renderer.drawTerrain(terrain);
+        renderer.drawPlayer(player, false, player.getIsDigging());
+        renderer.drawEnemies(enemies);
+        renderer.drawHarpoons(harpoons, false);
+        renderer.drawRocks(rocks, player);
     }
 };
 

@@ -185,17 +185,28 @@ private:
     
     void checkAllCollisions() {
         if (collisionManager.checkPlayerEnemyCollision(player, enemies)) {
-            playerLives--;
-            if (playerLives > 0) {
-                player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
-            } else {
-                stateManager.changeState(GameState::GAME_OVER);
-            }
+            playerHit();
+            return;
         }
         
-        int enemiesDefeated = 0;
         collisionManager.checkHarpoonEnemyCollisions(harpoons, enemies, score, 
-                                                   enemiesDefeated, 1);
+                                                   enemiesDefeated, 
+                                                   levelManager.getCurrentLevel());
+        
+        bool playerCrushed = false;
+        collisionManager.checkRockCollisions(rocks, player, enemies, playerCrushed);
+        if (playerCrushed) {
+            playerHit();
+            return;
+        }
+        
+        PowerUp* collectedPowerUp = collisionManager.checkPowerUpCollision(player, 
+                                                                          powerUps);
+        if (collectedPowerUp) {
+            powerUpManager.collectPowerUp(*collectedPowerUp, player, 
+                                        playerLives, score);
+            collectedPowerUp->collect();
+        }
     }
     
     void handleMenuState() {
@@ -237,6 +248,18 @@ private:
     void restartGame() {
         stateManager.changeState(GameState::PLAYING);
         initializeNewGame();
+    }
+
+    
+    void playerHit() {
+        playerLives--;
+        std::cout << "Player hit! Lives remaining: " << playerLives << std::endl;
+        
+        if (playerLives <= 0) {
+            stateManager.changeState(GameState::GAME_OVER);
+        } else {
+            player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
+        }
     }
 
     void render() {

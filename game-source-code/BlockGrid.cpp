@@ -22,7 +22,7 @@ void BlockGrid::clearPassageAt(Coordinate spot) {
 void BlockGrid::importMapFromFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        std::cout << "Warning: Could not open map file " << filepath 
+        std::cout << "Warning: Could not open map file " << filepath
                   << ", using default map" << std::endl;
         initializeDefaultMap();
         return;
@@ -59,14 +59,17 @@ void BlockGrid::importMapFromFile(const std::string& filepath) {
                 case 'P': // Player spawn
                     isBlocked[row][col] = false;
                     playerSpawns.push_back(pos);
+                    std::cout << "Player spawn at (" << row << "," << col << ")" << std::endl;
                     break;
                 case 'E': // Enemy spawn
                     isBlocked[row][col] = false;
                     enemySpawns.push_back(pos);
+                    std::cout << "Enemy spawn at (" << row << "," << col << ")" << std::endl;
                     break;
                 case 'R': // Rock spawn
                     isBlocked[row][col] = false;
                     rockSpawns.push_back(pos);
+                    std::cout << "Rock spawn at (" << row << "," << col << ")" << std::endl;
                     break;
                 default:
                     // Unknown character, treat as earth
@@ -78,16 +81,20 @@ void BlockGrid::importMapFromFile(const std::string& filepath) {
     }
     
     file.close();
+    std::cout << "Map loaded: " << playerSpawns.size() << " player spawns, "
+              << enemySpawns.size() << " enemy spawns, " 
+              << rockSpawns.size() << " rock spawns" << std::endl;
 }
 
 void BlockGrid::initializeDefaultMap() {
-    // Initialize all positions based on playable area
+    // Initialize all positions as solid earth (blocked)
     for (int row = 0; row < MAP_ROWS; ++row) {
         for (int col = 0; col < MAP_COLS; ++col) {
+            // HUD area (rows 0-2) is always unblocked
             if (row < Coordinate::PLAYABLE_START_ROW) {
-                isBlocked[row][col] = false; // HUD area
+                isBlocked[row][col] = false;
             } else {
-                isBlocked[row][col] = true;  // Earth by default
+                isBlocked[row][col] = true;
             }
         }
     }
@@ -99,17 +106,41 @@ void BlockGrid::initializeDefaultMap() {
         }
     }
     
-    // Create some pre-made tunnels
+    // Create some interesting pre-made tunnels in playable area
     int midRow = Coordinate::PLAYABLE_START_ROW + (Coordinate::PLAYABLE_ROWS / 2);
+    
+    // Horizontal tunnel across middle of playable area
     for (int col = 5; col < 20; ++col) {
         isBlocked[midRow][col] = false;
     }
     
-    // Create border passages
+    // Vertical tunnel down the middle
+    for (int row = Coordinate::PLAYABLE_START_ROW + 2; row < Coordinate::PLAYABLE_START_ROW + 12; ++row) {
+        isBlocked[row][15] = false;
+    }
+    
+    // Small room in bottom right of playable area
+    for (int row = Coordinate::WORLD_ROWS - 3; row < Coordinate::WORLD_ROWS; ++row) {
+        for (int col = 25; col < 28; ++col) {
+            isBlocked[row][col] = false;
+        }
+    }
+    
+    // Connecting tunnel to the room
+    for (int col = 20; col < 25; ++col) {
+        isBlocked[Coordinate::WORLD_ROWS - 2][col] = false;
+    }
+    
+    // Create border passages in playable area only
+    // Left border
     for (int row = Coordinate::PLAYABLE_START_ROW; row < Coordinate::WORLD_ROWS; ++row) {
         isBlocked[row][0] = false;
+    }
+    // Right border
+    for (int row = Coordinate::PLAYABLE_START_ROW; row < Coordinate::WORLD_ROWS; ++row) {
         isBlocked[row][Coordinate::WORLD_COLS-1] = false;
     }
+    // Bottom border
     for (int col = 0; col < Coordinate::WORLD_COLS; ++col) {
         isBlocked[Coordinate::WORLD_ROWS-1][col] = false;
     }
@@ -136,15 +167,19 @@ void BlockGrid::clearArea(Coordinate topLeft, Coordinate bottomRight) {
 
 int BlockGrid::countBlockedNeighbors(Coordinate center) const {
     int count = 0;
+    
+    // Check 8 directions around center
     for (int deltaRow = -1; deltaRow <= 1; ++deltaRow) {
         for (int deltaCol = -1; deltaCol <= 1; ++deltaCol) {
-            if (deltaRow == 0 && deltaCol == 0) continue;
+            if (deltaRow == 0 && deltaCol == 0) continue; // Skip center
+            
             Coordinate neighbor = center + Coordinate(deltaRow, deltaCol);
             if (isLocationBlocked(neighbor)) {
                 count++;
             }
         }
     }
+    
     return count;
 }
 

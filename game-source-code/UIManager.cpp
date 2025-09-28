@@ -1,6 +1,7 @@
 #include "UIManager.h"
 #include "Coordinate.h"
 #include <cmath>
+#include <algorithm>
 
 UIManager::UIManager(int screenW, int screenH, int cellSz) 
     : screenWidth(screenW), screenHeight(screenH), cellSize(cellSz),
@@ -28,6 +29,55 @@ void UIManager::drawHUD(int level, int score, int targetScore, int lives,
     DrawText(("Time: " + std::to_string(minutes) + ":" + 
              (seconds < 10 ? "0" : "") + std::to_string(seconds)).c_str(), 
              480, row2Y, 18, WHITE);
+    
+    drawPowerUpStatus(activePowerUps, 620, row2Y);
+    
+    if (!canFireHarpoon) {
+        drawWeaponCooldown(canFireHarpoon, harpoonProgress, 
+                          screenWidth - 100, row2Y + 25);
+    }
+}
+
+void UIManager::drawPowerUpStatus(const std::vector<PowerUpEffect>& effects, 
+                                 int startX, int y) {
+    int powerupX = startX;
+    
+    for (const auto& effect : effects) {
+        if (!effect.active) continue;
+        
+        std::string text;
+        Color color;
+        float timeLeft = effect.getTimeRemaining();
+        
+        switch (effect.type) {
+            case PowerUpType::RAPID_FIRE:
+                text = "RAPID FIRE " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                color = Color{0, 255, 255, 255};
+                break;
+            case PowerUpType::POWER_SHOT:
+                text = "POWER SHOT " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                color = ORANGE;
+                break;
+            case PowerUpType::SPEED_BOOST:
+                text = "SPEED " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                color = Color{255, 255, 0, 255};
+                break;
+            case PowerUpType::INVINCIBILITY:
+                text = "INVINCIBLE " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                color = Color{255, 0, 255, 255};
+                break;
+            default:
+                continue;
+        }
+        
+        if (timeLeft < 3.0f) {
+            float pulse = sin(GetTime() * 8.0f) * 0.3f + 0.7f;
+            color = ColorAlpha(color, pulse);
+        }
+        
+        DrawText(text.c_str(), powerupX, y, 14, color);
+        powerupX += text.length() * 8 + 10;
+    }
 }
 
 void UIManager::drawWeaponCooldown(bool canFire, float progress, int x, int y) {
@@ -48,7 +98,11 @@ void UIManager::drawPowerUpNotification(const std::string& message,
     int x = (screenWidth - textWidth) / 2;
     int y = screenHeight / 2 - 100;
     
+    DrawRectangle(x - 10, y - 5, textWidth + 20, 35, 
+                 ColorAlpha(BLACK, alpha * 0.7f));
+    
     Color textColor = ColorAlpha(YELLOW, alpha);
+    DrawText(message.c_str(), x + 1, y + 1, 24, ColorAlpha(BLACK, alpha));
     DrawText(message.c_str(), x, y, 24, textColor);
 }
 
@@ -57,12 +111,20 @@ void UIManager::drawMenu() {
              screenHeight/2 - 100, 32, WHITE);
     DrawText("Press ENTER to Start", screenWidth/2 - 120, 
              screenHeight/2 - 50, 20, YELLOW);
+    DrawText("Use Arrow Keys to Move", screenWidth/2 - 130, 
+             screenHeight/2 - 20, 16, GRAY);
+    DrawText("Press SPACE to Fire Harpoon", screenWidth/2 - 140, 
+             screenHeight/2, 16, GRAY);
+    DrawText("Press ESC to Exit", screenWidth/2 - 100, 
+             screenHeight/2 + 20, 16, GRAY);
 }
 
 void UIManager::drawPauseOverlay() {
     DrawRectangle(0, hudHeight, screenWidth, screenHeight - hudHeight, 
                  ColorAlpha(BLACK, 0.7f));
     DrawText("PAUSED", screenWidth/2 - 60, screenHeight/2, 32, WHITE);
+    DrawText("Press P to Resume", screenWidth/2 - 80, 
+             screenHeight/2 + 40, 16, YELLOW);
 }
 
 void UIManager::drawGameOverScreen(int score, int level) {
@@ -71,6 +133,12 @@ void UIManager::drawGameOverScreen(int score, int level) {
     DrawText("GAME OVER", screenWidth/2 - 100, screenHeight/2 - 50, 32, RED);
     DrawText(("Final Score: " + std::to_string(score)).c_str(), 
              screenWidth/2 - 80, screenHeight/2, 20, WHITE);
+    DrawText(("Level Reached: " + std::to_string(level)).c_str(), 
+             screenWidth/2 - 90, screenHeight/2 + 30, 16, GRAY);
+    DrawText("Press R to Restart", screenWidth/2 - 80, 
+             screenHeight/2 + 60, 16, YELLOW);
+    DrawText("Press ESC to Exit", screenWidth/2 - 75, 
+             screenHeight/2 + 80, 16, YELLOW);
 }
 
 void UIManager::drawLevelCompleteScreen(int score, float levelTimer) {
@@ -80,16 +148,28 @@ void UIManager::drawLevelCompleteScreen(int score, float levelTimer) {
              screenHeight/2 - 50, 28, GREEN);
     DrawText(("Score: " + std::to_string(score)).c_str(), 
              screenWidth/2 - 60, screenHeight/2, 20, WHITE);
+    
+    float maxTime = 180.0f;
+    float timeRatio = std::max(0.0f, (maxTime - levelTimer) / maxTime);
+    int timeBonus = static_cast<int>(1000 * timeRatio);
+    DrawText(("Time Bonus: " + std::to_string(timeBonus)).c_str(), 
+             screenWidth/2 - 80, screenHeight/2 + 30, 16, GOLD);
+    
+    DrawText("Press ENTER for Next Level", screenWidth/2 - 120, 
+             screenHeight/2 + 60, 16, YELLOW);
+    DrawText("Press R to Restart", screenWidth/2 - 80, 
+             screenHeight/2 + 80, 14, GRAY);
 }
 
 void UIManager::drawVictoryScreen(int score) {
     DrawRectangle(0, 0, screenWidth, screenHeight, ColorAlpha(PURPLE, 0.8f));
     DrawText("VICTORY!", screenWidth/2 - 80, screenHeight/2 - 80, 40, GOLD);
+    DrawText("You completed all levels!", screenWidth/2 - 140, 
+             screenHeight/2 - 30, 20, WHITE);
     DrawText(("Final Score: " + std::to_string(score)).c_str(), 
              screenWidth/2 - 80, screenHeight/2 + 10, 18, YELLOW);
-}
-
-void UIManager::drawPowerUpStatus(const std::vector<PowerUpEffect>& effects, 
-                                 int startX, int y) {
-    // Implementation for power-up status display
+    DrawText("Press R to Play Again", screenWidth/2 - 90, 
+             screenHeight/2 + 50, 16, WHITE);
+    DrawText("Press ESC to Exit", screenWidth/2 - 75, 
+             screenHeight/2 + 70, 14, GRAY);
 }

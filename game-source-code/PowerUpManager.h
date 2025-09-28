@@ -2,8 +2,8 @@
 #define POWERUPMANAGER_H
 
 #include "PowerUp.h"
-#include "PowerUpEffect.h"
 #include "Player.h"
+#include "UIManager.h"
 #include <vector>
 #include <string>
 

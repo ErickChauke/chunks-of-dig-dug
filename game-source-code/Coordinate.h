@@ -21,14 +21,64 @@ public:
     static const int PLAYABLE_START_ROW = 3;  // Game starts at row 3
     static const int PLAYABLE_ROWS = WORLD_ROWS - HUD_ROWS; // 17 playable rows
     
+    /**
+     * @brief Construct a new Coordinate object
+     * @param r Row position (default: 0)
+     * @param c Column position (default: 0)
+     */
     Coordinate(int r = 0, int c = 0);
+    
+    /**
+     * @brief Add two coordinates together
+     * @param other The coordinate to add
+     * @return Coordinate Result of addition
+     */
     Coordinate operator+(const Coordinate& other) const;
+    
+    /**
+     * @brief Check equality with another coordinate
+     * @param other The coordinate to compare
+     * @return true if equal, false otherwise
+     */
     bool operator==(const Coordinate& other) const;
+    
+    /**
+     * @brief Check inequality with another coordinate
+     * @param other The coordinate to compare
+     * @return true if not equal, false otherwise
+     */
     bool operator!=(const Coordinate& other) const;
+    
+    /**
+     * @brief Check if coordinate is within valid game bounds (playable area)
+     * @return true if within bounds, false otherwise
+     */
     bool isWithinBounds() const;
+    
+    /**
+     * @brief Check if coordinate is within playable game area
+     * @return true if in playable area, false if in HUD area
+     */
     bool isInPlayableArea() const;
+    
+    /**
+     * @brief Clamp coordinate to valid bounds
+     * @return Coordinate Clamped coordinate within bounds
+     */
     Coordinate clampToBounds() const;
+    
+    /**
+     * @brief Calculate Euclidean distance to another coordinate
+     * @param other Target coordinate
+     * @return float Distance between coordinates
+     */
     float calculateDistance(const Coordinate& other) const;
+    
+    /**
+     * @brief Calculate Manhattan distance to another coordinate
+     * @param other Target coordinate
+     * @return int Manhattan distance (sum of row and column differences)
+     */
     int manhattanDistance(const Coordinate& other) const;
 };
 

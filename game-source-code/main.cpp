@@ -110,16 +110,36 @@ private:
         
         for (auto& enemy : enemies) {
             if (enemy.isActive()) {
-                enemy.moveToward(player.getPosition(), terrain);
+                if (!enemy.getIsDestroyed()) {
+                    enemy.moveToward(player.getPosition(), terrain);
+                }
                 enemy.update();
             }
         }
         
-        for (auto& harpoon : harpoons) {
-            if (harpoon.isActive()) {
-                harpoon.update();
-            }
-        }
+        harpoons.erase(
+            std::remove_if(harpoons.begin(), harpoons.end(),
+                [](Harpoon& h) { 
+                    if (h.isActive()) {
+                        h.update();
+                        return false;
+                    }
+                    return true;
+                }),
+            harpoons.end()
+        );
+        
+        powerUps.erase(
+            std::remove_if(powerUps.begin(), powerUps.end(),
+                [](PowerUp& p) {
+                    if (p.isActive()) {
+                        p.update();
+                        return false;
+                    }
+                    return true;
+                }),
+            powerUps.end()
+        );
         
         for (auto& rock : rocks) {
             if (rock.isActive()) {

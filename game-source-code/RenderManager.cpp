@@ -19,10 +19,14 @@ void RenderManager::drawTerrain(const BlockGrid& terrain) {
                 }
             } else if (terrain.isLocationBlocked(pos)) {
                 DrawRectangle(screenX, screenY, cellSize, cellSize, BROWN);
-                DrawRectangleLines(screenX, screenY, cellSize, cellSize, DARKBROWN);
+                DrawRectangleLines(screenX, screenY, cellSize, cellSize, 
+                                 Color{101, 67, 33, 255});
+                DrawCircle(screenX + cellSize/4, screenY + cellSize/4, 2, 
+                         Color{101, 67, 33, 255});
             } else {
                 DrawRectangle(screenX, screenY, cellSize, cellSize, DARKGRAY);
                 DrawRectangleLines(screenX, screenY, cellSize, cellSize, GRAY);
+                DrawCircle(screenX + cellSize/2, screenY + cellSize/2, 1, LIGHTGRAY);
             }
         }
     }
@@ -37,7 +41,19 @@ void RenderManager::drawSkyCell(int x, int y) {
         static_cast<unsigned char>(235 * skyVariation),
         255
     };
+    
     DrawRectangle(x, y, cellSize, cellSize, skyColor);
+    
+    float cloudX = fmod(x + time * 20, screenWidth + 40);
+    float cloudY = y + sin(time + x * 0.05f) * 3;
+    
+    if (cloudX > x - 20 && cloudX < x + cellSize + 20) {
+        Color cloudColor = Color{255, 255, 255, 120};
+        DrawCircle(static_cast<int>(cloudX), static_cast<int>(cloudY + cellSize/2), 
+                  6, cloudColor);
+        DrawCircle(static_cast<int>(cloudX + 8), 
+                  static_cast<int>(cloudY + cellSize/2), 4, cloudColor);
+    }
 }
 
 void RenderManager::drawPlayer(const Player& player, bool hasSpeedBoost, 
@@ -46,7 +62,14 @@ void RenderManager::drawPlayer(const Player& player, bool hasSpeedBoost,
     int screenX = pos.col * cellSize + cellSize / 2;
     int screenY = pos.row * cellSize + cellSize / 2;
     
-    DrawCircle(screenX, screenY, 16, YELLOW);
+    Color playerColor = YELLOW;
+    
+    if (hasSpeedBoost) {
+        float pulse = sin(GetTime() * 8.0f) * 0.4f + 0.6f;
+        DrawCircleLines(screenX, screenY, 20, ColorAlpha(YELLOW, pulse));
+    }
+    
+    DrawCircle(screenX, screenY, 16, playerColor);
     DrawCircleLines(screenX, screenY, 16, ORANGE);
     DrawCircle(screenX - 6, screenY - 6, 3, BLACK);
     DrawCircle(screenX + 6, screenY - 6, 3, BLACK);
@@ -74,6 +97,8 @@ void RenderManager::drawEnemies(const std::vector<Enemy>& enemies) {
         
         DrawCircle(screenX, screenY, 15, color);
         DrawCircleLines(screenX, screenY, 15, MAROON);
+        DrawCircle(screenX - 5, screenY - 5, 2, BLACK);
+        DrawCircle(screenX + 5, screenY - 5, 2, BLACK);
     }
 }
 

@@ -5,6 +5,10 @@
 #include "Coordinate.h"
 #include "BlockGrid.h"
 #include "EnemyLogic.h"
+#include <vector>
+
+// Forward declaration
+class Rock;
 
 class Player : public GameObject, public Collidable {
 private:
@@ -19,6 +23,9 @@ private:
     float speedMultiplier;
     int consecutiveMoves;
     bool canDigDiagonally;
+    bool hasHarpoon;
+    float harpoonCooldown;
+    float lastHarpoonTime;
 
 public:
     Player(Coordinate startPos = Coordinate(1, 1));
@@ -27,7 +34,10 @@ public:
     void render() override;
     
     bool handleMovement(BlockGrid& terrain);
+    bool handleMovementWithRocks(BlockGrid& terrain, const std::vector<Rock>& rocks);
     bool moveInDirection(Direction direction, BlockGrid& terrain);
+    bool moveInDirectionWithRocks(Direction direction, BlockGrid& terrain, 
+                                 const std::vector<Rock>& rocks);
     bool digTunnel(Coordinate pos, BlockGrid& terrain);
     
     Coordinate getCollisionBounds() const override;
@@ -39,6 +49,9 @@ public:
     Direction getCurrentInputDirection() const;
     bool getIsMoving() const;
     float getSpeedMultiplier() const;
+    bool canFireHarpoon() const;
+    
+    Coordinate& getPositionRef() { return position; }
     
     void setSpeedMultiplier(float multiplier);
     void setDiagonalDigging(bool enabled);
@@ -47,10 +60,11 @@ public:
 private:
     void updateMovementTimer();
     void updateDiggingEffects();
-    void updateMovementStats();
     bool canMove() const;
     Direction processInputBuffer();
+    void updateMovementStats();
     float getDynamicMoveCooldown() const;
+    bool isPositionBlockedByRock(Coordinate pos, const std::vector<Rock>& rocks) const;
 };
 
-#endif
+#endif // PLAYER_H

@@ -5,6 +5,9 @@
 #include "BlockGrid.h"
 #include <vector>
 
+/**
+ * @brief Direction enumeration for movement
+ */
 enum class Direction {
     UP,
     DOWN,
@@ -15,6 +18,10 @@ enum class Direction {
 
 /**
  * @brief Makes movement decisions for enemies
+ * 
+ * The EnemyLogic class handles AI behavior for monsters,
+ * including pathfinding, phase-through mechanics, and
+ * decision making based on player position.
  */
 class EnemyLogic {
 private:

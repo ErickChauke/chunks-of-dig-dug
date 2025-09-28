@@ -3,13 +3,27 @@
 
 #include "Coordinate.h"
 
+/**
+ * @brief Base class for all game objects
+ * 
+ * GameObject provides the foundation for all interactive elements
+ * in the game including players, enemies, and items.
+ */
 class GameObject {
 protected:
     Coordinate position;
     bool active;
 
 public:
+    /**
+     * @brief Construct a new GameObject
+     * @param pos Initial position
+     */
     GameObject(Coordinate pos = Coordinate(0, 0));
+    
+    /**
+     * @brief Virtual destructor for proper inheritance
+     */
     virtual ~GameObject() = default;
     
     virtual void update() = 0;
@@ -21,6 +35,9 @@ public:
     void setActive(bool state);
 };
 
+/**
+ * @brief Interface for objects that can collide
+ */
 class Collidable {
 public:
     virtual ~Collidable() = default;

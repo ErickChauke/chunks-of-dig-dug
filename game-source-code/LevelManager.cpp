@@ -22,7 +22,10 @@ void LevelManager::initializeLevel(int level, BlockGrid& terrain, Player& player
     // Reset player
     player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
     
-    // TODO: Implement spawning in next commit
+    // Now spawn entities
+    spawnEnemies(enemies);
+    spawnRocks(rocks, terrain);
+    
     nextPowerUpTime = 15.0f;
 }
 
@@ -36,7 +39,14 @@ void LevelManager::updatePowerUpSpawnTime(float levelTimer) {
 
 bool LevelManager::isLevelComplete(const std::vector<Enemy>& enemies, 
                                   int score) const {
-    return score >= targetScore; // Simple completion check for now
+    bool allEnemiesDefeated = true;
+    for (const auto& enemy : enemies) {
+        if (enemy.isActive() && !enemy.getIsDestroyed()) {
+            allEnemiesDefeated = false;
+            break;
+        }
+    }
+    return allEnemiesDefeated || score >= targetScore;
 }
 
 int LevelManager::calculateTimeBonus(float levelTimer, int level) const {
@@ -60,21 +70,44 @@ std::string LevelManager::getLevelMapFile(int level) const {
     return "resources/maps/level" + std::to_string(level) + ".txt";
 }
 
-// Stub implementations (will be enhanced in next commit)
 void LevelManager::spawnEnemies(std::vector<Enemy>& enemies) {
-    // TODO: Implement in next commit
+    int numEnemies = 2 + currentLevel;
+    
+    for (int i = 0; i < numEnemies && i < 8; ++i) {
+        Coordinate spawnPos = findValidSpawnPosition(Player());
+        EnemyType type = (i % 3 == 0) ? EnemyType::AGGRESSIVE_MONSTER : 
+                                       EnemyType::RED_MONSTER;
+        enemies.emplace_back(spawnPos, type);
+    }
 }
 
 void LevelManager::spawnRocks(std::vector<Rock>& rocks, const BlockGrid& terrain) {
-    // TODO: Implement in next commit
+    int numRocks = 4 + (currentLevel / 2);
+    numRocks = std::min(numRocks, 8);
+    
+    for (int i = 0; i < numRocks; ++i) {
+        int row = Coordinate::PLAYABLE_START_ROW + 3 + (std::rand() % 8);
+        int col = 5 + (std::rand() % (Coordinate::WORLD_COLS - 10));
+        rocks.emplace_back(Coordinate(row, col));
+    }
 }
 
 Coordinate LevelManager::findValidSpawnPosition(const Player& player) const {
-    // Simple fallback position for now
-    return Coordinate(Coordinate::PLAYABLE_START_ROW + 5, 10);
+    int row = Coordinate::PLAYABLE_START_ROW + 2 + 
+             (std::rand() % (Coordinate::PLAYABLE_ROWS - 5));
+    int col = 5 + (std::rand() % (Coordinate::WORLD_COLS - 10));
+    return Coordinate(row, col);
 }
 
 PowerUp LevelManager::createRandomPowerUp() {
     Coordinate pos = findValidSpawnPosition(Player());
-    return PowerUp(pos, PowerUpType::EXTRA_LIFE);
+    PowerUpType types[] = {
+        PowerUpType::EXTRA_LIFE,
+        PowerUpType::SCORE_MULTIPLIER,
+        PowerUpType::RAPID_FIRE,
+        PowerUpType::POWER_SHOT,
+        PowerUpType::SPEED_BOOST
+    };
+    PowerUpType selectedType = types[std::rand() % 5];
+    return PowerUp(pos, selectedType);
 }

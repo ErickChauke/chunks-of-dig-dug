@@ -8,6 +8,7 @@
 #include "../game-source-code/EnemyLogic.h"
 #include "../game-source-code/Rock.h"
 #include "../game-source-code/Harpoon.h"
+#include "../game-source-code/PowerUpManager.h"
 
 TEST_CASE("Coordinate System") {
     SUBCASE("Constructor and member access") {
@@ -479,5 +480,63 @@ TEST_CASE("Object Movement Integration") {
         
         CHECK(player.getPosition() == enemy.getPosition());
         CHECK(player.getPosition() == rock.getPosition());
+    }
+}
+
+
+
+TEST_CASE("PowerUpManager System") {
+    PowerUpManager manager;
+    Player player(Coordinate(5, 5));
+    int lives = 3;
+    int score = 0;
+    
+    SUBCASE("Initialization") {
+        CHECK(manager.getHarpoonCooldown() == doctest::Approx(1.0f));
+        CHECK(manager.getHasRapidFire() == false);
+        CHECK(manager.getHasPowerShot() == false);
+    }
+    
+    SUBCASE("Extra life collection") {
+        PowerUp extraLife(Coordinate(5, 5), PowerUpType::EXTRA_LIFE);
+        manager.collectPowerUp(extraLife, player, lives, score);
+        CHECK(lives == 4);
+    }
+    
+    SUBCASE("Score multiplier collection") {
+        PowerUp scoreBonus(Coordinate(5, 5), PowerUpType::SCORE_MULTIPLIER);
+        manager.collectPowerUp(scoreBonus, player, lives, score);
+        CHECK(score == 500);
+    }
+    
+    SUBCASE("Rapid fire activation") {
+        PowerUp rapidFire(Coordinate(5, 5), PowerUpType::RAPID_FIRE);
+        manager.collectPowerUp(rapidFire, player, lives, score);
+        manager.update();
+        CHECK(manager.getHasRapidFire() == true);
+        CHECK(manager.getHarpoonCooldown() == doctest::Approx(0.3f));
+    }
+    
+    SUBCASE("Power shot activation") {
+        PowerUp powerShot(Coordinate(5, 5), PowerUpType::POWER_SHOT);
+        manager.collectPowerUp(powerShot, player, lives, score);
+        manager.update();
+        CHECK(manager.getHasPowerShot() == true);
+    }
+    
+    SUBCASE("Speed boost activation") {
+        PowerUp speedBoost(Coordinate(5, 5), PowerUpType::SPEED_BOOST);
+        manager.collectPowerUp(speedBoost, player, lives, score);
+        manager.update();
+        CHECK(manager.hasPowerUpEffect(PowerUpType::SPEED_BOOST) == true);
+    }
+    
+    SUBCASE("Reset functionality") {
+        PowerUp rapidFire(Coordinate(5, 5), PowerUpType::RAPID_FIRE);
+        manager.collectPowerUp(rapidFire, player, lives, score);
+        manager.update();
+        manager.reset();
+        CHECK(manager.getHasRapidFire() == false);
+        CHECK(manager.getHarpoonCooldown() == doctest::Approx(1.0f));
     }
 }

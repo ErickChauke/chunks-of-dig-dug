@@ -690,3 +690,73 @@ TEST_CASE("Enhanced Rock Crushing Mechanics") {
         CHECK(rock1.getPosition() != rock2.getPosition());
     }
 }
+
+TEST_CASE("Complex Multi-Object Interactions") {
+    SUBCASE("Rock with player and enemies") {
+        BlockGrid terrain;
+        Player player(Coordinate(10, 5));
+        Rock rock(Coordinate(8, 5));
+        std::vector<Enemy> enemies;
+        enemies.emplace_back(Coordinate(9, 5), EnemyType::RED_MONSTER);
+        
+        terrain.clearPassageAt(Coordinate(9, 5));
+        terrain.clearPassageAt(Coordinate(10, 5));
+        rock.checkStability(terrain);
+        rock.handleCrushingLogic(player, enemies);
+        
+        CHECK(rock.isActive() == true);
+    }
+    
+    SUBCASE("Player digging triggers rock check") {
+        BlockGrid terrain;
+        Player player(Coordinate(9, 5));
+        Rock rock(Coordinate(8, 5));
+        
+        bool dug = player.digTunnel(Coordinate(9, 5), terrain);
+        CHECK(dug == true);
+        rock.checkStability(terrain);
+    }
+    
+    SUBCASE("Harpoon and rock coexist") {
+        Player player(Coordinate(5, 5));
+        Rock rock(Coordinate(5, 7));
+        std::vector<Harpoon> harpoons;
+        harpoons.emplace_back(Coordinate(5, 6), Direction::RIGHT, &player);
+        
+        CHECK(harpoons[0].isActive() == true);
+        CHECK(rock.isActive() == true);
+    }
+    
+    SUBCASE("Multiple enemies and rocks") {
+        std::vector<Enemy> enemies;
+        std::vector<Rock> rocks;
+        
+        enemies.emplace_back(Coordinate(5, 5), EnemyType::RED_MONSTER);
+        enemies.emplace_back(Coordinate(7, 7), EnemyType::AGGRESSIVE_MONSTER);
+        rocks.emplace_back(Coordinate(6, 5));
+        rocks.emplace_back(Coordinate(8, 7));
+        
+        CHECK(enemies.size() == 2);
+        CHECK(rocks.size() == 2);
+        
+        for (auto& enemy : enemies) {
+            CHECK(enemy.isActive() == true);
+        }
+        for (auto& rock : rocks) {
+            CHECK(rock.isActive() == true);
+        }
+    }
+    
+    SUBCASE("PowerUp with active gameplay") {
+        Player player(Coordinate(5, 5));
+        std::vector<Enemy> enemies;
+        std::vector<PowerUp> powerUps;
+        
+        enemies.emplace_back(Coordinate(10, 10), EnemyType::RED_MONSTER);
+        powerUps.emplace_back(Coordinate(15, 15), PowerUpType::RAPID_FIRE);
+        
+        CHECK(player.isActive() == true);
+        CHECK(enemies[0].isActive() == true);
+        CHECK(powerUps[0].isActive() == true);
+    }
+}

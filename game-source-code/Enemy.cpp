@@ -6,14 +6,15 @@
 using namespace GameConstants;
 
 const float DESTROY_DURATION = 0.8f;
-const float FIRE_BREATH_COOLDOWN = 3.0f;
+const float FIRE_BREATH_COOLDOWN = 2.5f;
+const float FIRE_BREATH_STATE_DURATION = 0.5f;
 
 Enemy::Enemy(Coordinate startPos, EnemyType type) 
     : GameObject(startPos), enemyType(type), currentDirection(Direction::NONE),
       moveTimer(0.0f), isPhasing(false), currentState(EnemyState::NORMAL),
       stateTimer(0.0f), baseSpeed(1.0f), health(1), isDestroyed(false),
       destroyTimer(0.0f), destroyDuration(DESTROY_DURATION),
-      fireBreathTimer(0.0f), fireBreathCooldown(FIRE_BREATH_COOLDOWN),
+      fireBreathTimer(FIRE_BREATH_COOLDOWN), fireBreathCooldown(FIRE_BREATH_COOLDOWN),
       canBreatheFire(false) {
     
     moveCooldown = getMoveCooldownForType();
@@ -24,7 +25,6 @@ Enemy::Enemy(Coordinate startPos, EnemyType type)
     } else if (type == EnemyType::GREEN_DRAGON) {
         health = 2;
         canBreatheFire = true;
-        fireBreathTimer = FIRE_BREATH_COOLDOWN;
     }
     
     float randomFactor = 0.8f + (std::rand() % 40) * 0.01f;
@@ -189,8 +189,9 @@ void Enemy::updateState() {
             }
             break;
         case EnemyState::BREATHING_FIRE:
-            if (currentTime - stateTimer > 1.0f) {
+            if (currentTime - stateTimer > FIRE_BREATH_STATE_DURATION) {
                 currentState = EnemyState::NORMAL;
+                fireBreathTimer = 0.0f;
             }
             break;
         case EnemyState::NORMAL:
@@ -212,16 +213,27 @@ float Enemy::getMoveCooldownForType() const {
 void Enemy::updateFireBreathing() {
     if (!canBreatheFire) return;
     
-    fireBreathTimer += GetFrameTime();
+    if (currentState != EnemyState::BREATHING_FIRE) {
+        fireBreathTimer += GetFrameTime();
+    }
 }
 
 bool Enemy::shouldBreatheFire(Coordinate playerPos) const {
     if (!canBreatheFire || isDestroyed) return false;
     if (currentState == EnemyState::BREATHING_FIRE) return false;
+    if (currentState == EnemyState::STUNNED) return false;
     if (fireBreathTimer < fireBreathCooldown) return false;
     
     float distance = position.calculateDistance(playerPos);
-    return distance < 8.0f && distance > 1.0f;
+    bool inRange = distance < 8.0f && distance > 1.0f;
+    
+    if (inRange) {
+        const_cast<Enemy*>(this)->currentState = EnemyState::BREATHING_FIRE;
+        const_cast<Enemy*>(this)->stateTimer = GetTime();
+        return true;
+    }
+    
+    return false;
 }
 
 Direction Enemy::getFireDirection(Coordinate playerPos) const {

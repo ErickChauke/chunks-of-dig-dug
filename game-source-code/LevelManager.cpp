@@ -29,17 +29,28 @@ void LevelManager::initializeLevel(int level, BlockGrid& terrain, Player& player
 }
 
 void LevelManager::spawnEnemies(std::vector<Enemy>& enemies) {
-    int numEnemies = 2 + currentLevel;
-    int numGreenDragons = (currentLevel >= 3) ? (currentLevel / 3) : 0;
+    int numEnemies = 3 + currentLevel;
+    numEnemies = std::min(numEnemies, 8);
     
-    for (int i = 0; i < numEnemies && i < 8; ++i) {
-        Coordinate spawnPos = findValidSpawnPosition(
-            Player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)));
+    Coordinate spawnPos;
+    
+    spawnPos = findValidSpawnPosition(Player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)));
+    enemies.emplace_back(spawnPos, EnemyType::GREEN_DRAGON);
+    std::cout << "  Spawned GREEN_DRAGON" << std::endl;
+    
+    spawnPos = findValidSpawnPosition(Player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)));
+    enemies.emplace_back(spawnPos, EnemyType::RED_MONSTER);
+    std::cout << "  Spawned RED_MONSTER" << std::endl;
+    
+    for (int i = 2; i < numEnemies; ++i) {
+        spawnPos = findValidSpawnPosition(Player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)));
         
         EnemyType type;
-        if (i < numGreenDragons) {
+        int typeRoll = std::rand() % 100;
+        
+        if (typeRoll < 30) {
             type = EnemyType::GREEN_DRAGON;
-        } else if (i % 3 == 0) {
+        } else if (typeRoll < 60) {
             type = EnemyType::AGGRESSIVE_MONSTER;
         } else {
             type = EnemyType::RED_MONSTER;
@@ -48,8 +59,7 @@ void LevelManager::spawnEnemies(std::vector<Enemy>& enemies) {
         enemies.emplace_back(spawnPos, type);
     }
     
-    std::cout << "Spawned " << enemies.size() << " enemies (" 
-              << numGreenDragons << " green dragons)" << std::endl;
+    std::cout << "Spawned " << enemies.size() << " enemies total" << std::endl;
 }
 
 void LevelManager::spawnRocks(std::vector<Rock>& rocks, const BlockGrid& terrain) {

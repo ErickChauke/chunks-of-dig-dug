@@ -14,15 +14,17 @@ void UIManager::drawHUD(int level, int score, int targetScore, int lives,
     DrawRectangle(0, 0, screenWidth, 2 * cellSize, Color{40, 40, 40, 255});
     DrawLine(0, 2 * cellSize, screenWidth, 2 * cellSize, WHITE);
     
-    DrawText("UNDERGROUND ADVENTURE", 10, 10, 24, WHITE);
+    DrawText("UNDERGROUND ADVENTURE", 10, 10, 24, GOLD);
     DrawText(("Level " + std::to_string(level)).c_str(), 
-             screenWidth - 120, 10, 20, BLUE);
+             screenWidth - 120, 10, 20, SKYBLUE);
     
     int row2Y = cellSize + 10;
     DrawText(("Score: " + std::to_string(score)).c_str(), 10, row2Y, 18, GREEN);
     DrawText(("Target: " + std::to_string(targetScore)).c_str(), 
              180, row2Y, 18, YELLOW);
-    DrawText(("Lives: " + std::to_string(lives)).c_str(), 350, row2Y, 18, RED);
+    
+    Color livesColor = lives > 1 ? Color{255, 100, 100, 255} : RED;
+    DrawText(("Lives: " + std::to_string(lives)).c_str(), 350, row2Y, 18, livesColor);
     
     int minutes = static_cast<int>(levelTimer) / 60;
     int seconds = static_cast<int>(levelTimer) % 60;
@@ -51,11 +53,11 @@ void UIManager::drawPowerUpStatus(const std::vector<PowerUpEffect>& effects,
         
         switch (effect.type) {
             case PowerUpType::RAPID_FIRE:
-                text = "RAPID FIRE " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                text = "RAPID " + std::to_string(static_cast<int>(timeLeft)) + "s";
                 color = Color{0, 255, 255, 255};
                 break;
             case PowerUpType::POWER_SHOT:
-                text = "POWER SHOT " + std::to_string(static_cast<int>(timeLeft)) + "s";
+                text = "POWER " + std::to_string(static_cast<int>(timeLeft)) + "s";
                 color = ORANGE;
                 break;
             case PowerUpType::SPEED_BOOST:
@@ -101,22 +103,22 @@ void UIManager::drawPowerUpNotification(const std::string& message,
     DrawRectangle(x - 10, y - 5, textWidth + 20, 35, 
                  ColorAlpha(BLACK, alpha * 0.7f));
     
-    Color textColor = ColorAlpha(YELLOW, alpha);
+    Color textColor = ColorAlpha(GOLD, alpha);
     DrawText(message.c_str(), x + 1, y + 1, 24, ColorAlpha(BLACK, alpha));
     DrawText(message.c_str(), x, y, 24, textColor);
 }
 
 void UIManager::drawMenu() {
     DrawText("UNDERGROUND ADVENTURE", screenWidth/2 - 200, 
-             screenHeight/2 - 100, 32, WHITE);
+             screenHeight/2 - 100, 32, GOLD);
     DrawText("Press ENTER to Start", screenWidth/2 - 120, 
-             screenHeight/2 - 50, 20, YELLOW);
-    DrawText("Use Arrow Keys to Move", screenWidth/2 - 130, 
-             screenHeight/2 - 20, 16, GRAY);
-    DrawText("Press SPACE to Fire Harpoon", screenWidth/2 - 140, 
-             screenHeight/2, 16, GRAY);
-    DrawText("Press ESC to Exit", screenWidth/2 - 100, 
-             screenHeight/2 + 20, 16, GRAY);
+             screenHeight/2 - 40, 20, YELLOW);
+    DrawText("Arrow Keys - Move & Dig", screenWidth/2 - 120, 
+             screenHeight/2, 16, LIGHTGRAY);
+    DrawText("SPACE - Fire Harpoon", screenWidth/2 - 110, 
+             screenHeight/2 + 25, 16, LIGHTGRAY);
+    DrawText("P - Pause  |  R - Restart", screenWidth/2 - 120, 
+             screenHeight/2 + 50, 14, GRAY);
 }
 
 void UIManager::drawPauseOverlay() {
@@ -157,19 +159,15 @@ void UIManager::drawLevelCompleteScreen(int score, float levelTimer) {
     
     DrawText("Press ENTER for Next Level", screenWidth/2 - 120, 
              screenHeight/2 + 60, 16, YELLOW);
-    DrawText("Press R to Restart", screenWidth/2 - 80, 
-             screenHeight/2 + 80, 14, GRAY);
 }
 
 void UIManager::drawVictoryScreen(int score) {
     DrawRectangle(0, 0, screenWidth, screenHeight, ColorAlpha(PURPLE, 0.8f));
     DrawText("VICTORY!", screenWidth/2 - 80, screenHeight/2 - 80, 40, GOLD);
-    DrawText("You completed all levels!", screenWidth/2 - 140, 
+    DrawText("You defeated all enemies!", screenWidth/2 - 140, 
              screenHeight/2 - 30, 20, WHITE);
     DrawText(("Final Score: " + std::to_string(score)).c_str(), 
              screenWidth/2 - 80, screenHeight/2 + 10, 18, YELLOW);
     DrawText("Press R to Play Again", screenWidth/2 - 90, 
              screenHeight/2 + 50, 16, WHITE);
-    DrawText("Press ESC to Exit", screenWidth/2 - 75, 
-             screenHeight/2 + 70, 14, GRAY);
 }

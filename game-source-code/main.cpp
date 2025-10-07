@@ -15,17 +15,13 @@
 #include "LevelManager.h"
 #include "PowerUpManager.h"
 #include "GameState.h"
+#include "ParticleSystem.h"
+#include "GameConstants.h"
 
-const int SCREEN_WIDTH = 1200;
-const int SCREEN_HEIGHT = 800;
-const int CELL_SIZE = 40;
+using namespace GameConstants;
 
-/**
- * @brief Main game class following single responsibility principle
- */
 class DigDugGame {
 private:
-    // Core systems
     raylib::Window window;
     RenderManager renderer;
     UIManager uiManager;
@@ -34,8 +30,8 @@ private:
     LevelManager levelManager;
     PowerUpManager powerUpManager;
     GameStateManager stateManager;
+    ParticleSystem particles;
     
-    // Game world
     BlockGrid terrain;
     Player player;
     std::vector<Enemy> enemies;
@@ -43,7 +39,6 @@ private:
     std::vector<PowerUp> powerUps;
     std::vector<Rock> rocks;
     
-    // Game state
     int score;
     int enemiesDefeated;
     int playerLives;
@@ -55,7 +50,7 @@ public:
                    renderer(CELL_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT),
                    uiManager(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE),
                    player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)),
-                   score(0), enemiesDefeated(0), playerLives(3), 
+                   score(0), enemiesDefeated(0), playerLives(STARTING_LIVES), 
                    lastHarpoonTime(0.0f), levelTimer(0.0f) {
         window.SetTargetFPS(60);
         initializeNewGame();
@@ -71,6 +66,7 @@ public:
 private:
     void update() {
         float deltaTime = GetFrameTime();
+        particles.update();
         
         switch (stateManager.getCurrentState()) {
             case GameState::MENU:
@@ -103,6 +99,15 @@ private:
         checkAllCollisions();
         checkLevelProgression();
         spawnPowerUps();
+        
+        if (player.getIsDigging()) {
+            Coordinate pos = player.getPosition();
+            Vector2 particlePos = {
+                pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+                pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+            };
+            particles.emitTrail(particlePos, BROWN);
+        }
     }
     
     void updateGameObjects() {
@@ -116,10 +121,21 @@ private:
     void updateEnemies() {
         for (auto& enemy : enemies) {
             if (enemy.isActive()) {
+                bool wasDestroyed = enemy.getIsDestroyed();
+                
                 if (!enemy.getIsDestroyed()) {
                     enemy.moveToward(player.getPosition(), terrain);
                 }
                 enemy.update();
+                
+                if (!wasDestroyed && enemy.getIsDestroyed()) {
+                    Coordinate pos = enemy.getPosition();
+                    Vector2 particlePos = {
+                        pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+                        pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+                    };
+                    particles.emitBurst(particlePos, YELLOW, 15);
+                }
             }
         }
     }
@@ -155,14 +171,23 @@ private:
     void updateRocks() {
         for (auto& rock : rocks) {
             if (rock.isActive()) {
+                bool wasFalling = rock.getIsFalling();
                 rock.update();
                 rock.applyGravity(terrain);
+                
+                if (wasFalling && rock.getHasLanded()) {
+                    Coordinate pos = rock.getPosition();
+                    Vector2 particlePos = {
+                        pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+                        pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+                    };
+                    particles.emit(particlePos, GRAY, 10);
+                }
             }
         }
     }
     
     void handleGameInput() {
-        // Use the new rock-aware movement function
         player.handleMovementWithRocks(terrain, rocks);
         
         if (inputManager.isHarpoonPressed() && canFireHarpoon()) {
@@ -202,6 +227,7 @@ private:
             return;
         }
         
+        int oldScore = score;
         collisionManager.checkHarpoonEnemyCollisions(harpoons, enemies, score, 
                                                    enemiesDefeated, 
                                                    levelManager.getCurrentLevel());
@@ -216,6 +242,13 @@ private:
         PowerUp* collectedPowerUp = collisionManager.checkPowerUpCollision(player, 
                                                                           powerUps);
         if (collectedPowerUp) {
+            Coordinate pos = collectedPowerUp->getPosition();
+            Vector2 particlePos = {
+                pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+                pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+            };
+            particles.emit(particlePos, GOLD, 12);
+            
             powerUpManager.collectPowerUp(*collectedPowerUp, player, 
                                         playerLives, score);
             collectedPowerUp->collect();
@@ -223,8 +256,14 @@ private:
     }
     
     void playerHit() {
+        Coordinate pos = player.getPosition();
+        Vector2 particlePos = {
+            pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+            pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+        };
+        particles.emitBurst(particlePos, RED, 20);
+        
         playerLives--;
-        std::cout << "Player hit! Lives remaining: " << playerLives << std::endl;
         
         if (playerLives <= 0) {
             stateManager.changeState(GameState::GAME_OVER);
@@ -238,8 +277,6 @@ private:
             stateManager.changeState(GameState::LEVEL_COMPLETE);
             score += levelManager.calculateTimeBonus(levelTimer, 
                                                    levelManager.getCurrentLevel());
-            std::cout << "Level " << levelManager.getCurrentLevel() 
-                      << " Complete!" << std::endl;
         }
     }
     
@@ -302,10 +339,11 @@ private:
         levelManager.reset();
         powerUpManager.reset();
         score = 0;
-        playerLives = 3;
+        playerLives = STARTING_LIVES;
         enemiesDefeated = 0;
         levelTimer = 0.0f;
         lastHarpoonTime = 0.0f;
+        particles.clear();
         initializeLevel();
     }
     
@@ -314,8 +352,8 @@ private:
                                    player, enemies, powerUps, rocks);
         levelTimer = 0.0f;
         harpoons.clear();
+        particles.clear();
         
-        // Reset speed if it was modified by power-ups
         if (!powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST)) {
             player.setSpeedMultiplier(1.0f);
         }
@@ -326,7 +364,7 @@ private:
         powerUpManager.reset();
         player.setSpeedMultiplier(1.0f);
         
-        if (levelManager.getCurrentLevel() > 10) {
+        if (levelManager.getCurrentLevel() > MAX_LEVELS) {
             stateManager.changeState(GameState::VICTORY);
         } else {
             stateManager.changeState(GameState::PLAYING);
@@ -388,6 +426,8 @@ private:
                           powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST),
                           player.getIsDigging());
         renderer.drawRocks(rocks, player);
+        
+        particles.draw();
         
         uiManager.drawPowerUpNotification(powerUpManager.getPowerUpMessage(), 
                                         powerUpManager.getTimeSinceLastCollection());

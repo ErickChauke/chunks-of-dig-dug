@@ -27,6 +27,9 @@ public:
 
 private:
     int getScoreForEnemy(EnemyType type, int level);
+    bool checkAABBCollision(Coordinate pos1, Coordinate bounds1,
+                           Coordinate pos2, Coordinate bounds2);
+    bool isPositionMatch(Coordinate pos1, Coordinate pos2);
 };
 
 #endif // COLLISIONMANAGER_H

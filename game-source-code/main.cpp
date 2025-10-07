@@ -16,6 +16,7 @@
 #include "PowerUpManager.h"
 #include "GameState.h"
 #include "ParticleSystem.h"
+#include "ScreenShake.h"
 #include "GameConstants.h"
 
 using namespace GameConstants;
@@ -31,6 +32,7 @@ private:
     PowerUpManager powerUpManager;
     GameStateManager stateManager;
     ParticleSystem particles;
+    ScreenShake screenShake;
     
     BlockGrid terrain;
     Player player;
@@ -67,6 +69,7 @@ private:
     void update() {
         float deltaTime = GetFrameTime();
         particles.update();
+        screenShake.update();
         
         switch (stateManager.getCurrentState()) {
             case GameState::MENU:
@@ -135,6 +138,7 @@ private:
                         pos.row * CELL_SIZE + CELL_SIZE / 2.0f
                     };
                     particles.emitBurst(particlePos, YELLOW, 15);
+                    screenShake.shake(5.0f, 0.2f);
                 }
             }
         }
@@ -182,6 +186,7 @@ private:
                         pos.row * CELL_SIZE + CELL_SIZE / 2.0f
                     };
                     particles.emit(particlePos, GRAY, 10);
+                    screenShake.shake(8.0f, 0.25f);
                 }
             }
         }
@@ -262,6 +267,7 @@ private:
             pos.row * CELL_SIZE + CELL_SIZE / 2.0f
         };
         particles.emitBurst(particlePos, RED, 20);
+        screenShake.shake(15.0f, 0.4f);
         
         playerLives--;
         
@@ -381,6 +387,8 @@ private:
         BeginDrawing();
         ClearBackground(BLACK);
         
+        screenShake.apply();
+        
         switch (stateManager.getCurrentState()) {
             case GameState::MENU:
                 uiManager.drawMenu();
@@ -405,6 +413,7 @@ private:
                 break;
         }
         
+        screenShake.reset();
         EndDrawing();
     }
     

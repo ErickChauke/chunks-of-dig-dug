@@ -8,14 +8,16 @@
 enum class EnemyType {
     RED_MONSTER = 0,
     AGGRESSIVE_MONSTER = 1,
-    FAST_MONSTER = 2
+    FAST_MONSTER = 2,
+    GREEN_DRAGON = 3
 };
 
 enum class EnemyState {
     NORMAL,
     PHASING,
     STUNNED,
-    FLEEING
+    FLEEING,
+    BREATHING_FIRE
 };
 
 class Enemy : public GameObject, public Collidable {
@@ -33,6 +35,9 @@ private:
     bool isDestroyed;
     float destroyTimer;
     float destroyDuration;
+    float fireBreathTimer;
+    float fireBreathCooldown;
+    bool canBreatheFire;
 
 public:
     Enemy(Coordinate startPos, EnemyType type = EnemyType::RED_MONSTER);
@@ -51,34 +56,20 @@ public:
     Coordinate getCollisionBounds() const override;
     void onCollision(GameObject* other) override;
     
-    /**
-     * @brief Set enemy to aggressive mode
-     * @param aggressive Whether to be aggressive
-     */
     void setAggressive(bool aggressive);
-    
-    /**
-     * @brief Damage the enemy
-     * @param damage Amount of damage
-     */
     void takeDamage(int damage);
-    
-    /**
-     * @brief Get enemy health
-     * @return int Current health
-     */
     int getHealth() const;
-    
-    /**
-     * @brief Destroy enemy with animation
-     */
     void destroy();
+    
+    bool shouldBreatheFire(Coordinate playerPos) const;
+    Direction getFireDirection(Coordinate playerPos) const;
 
 private:
     void updateMovement(const BlockGrid& terrain, Coordinate playerPos);
     bool canMove() const;
     void updateState();
     float getMoveCooldownForType() const;
+    void updateFireBreathing();
 };
 
 #endif // ENEMY_H

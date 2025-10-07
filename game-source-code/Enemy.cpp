@@ -1,24 +1,32 @@
 #include "Enemy.h"
 #include "BlockGrid.h"
+#include "GameConstants.h"
 #include <raylib-cpp.hpp>
 
+using namespace GameConstants;
+
 const float DESTROY_DURATION = 0.8f;
+const float FIRE_BREATH_COOLDOWN = 3.0f;
 
 Enemy::Enemy(Coordinate startPos, EnemyType type) 
     : GameObject(startPos), enemyType(type), currentDirection(Direction::NONE),
       moveTimer(0.0f), isPhasing(false), currentState(EnemyState::NORMAL),
       stateTimer(0.0f), baseSpeed(1.0f), health(1), isDestroyed(false),
-      destroyTimer(0.0f), destroyDuration(DESTROY_DURATION) {
+      destroyTimer(0.0f), destroyDuration(DESTROY_DURATION),
+      fireBreathTimer(0.0f), fireBreathCooldown(FIRE_BREATH_COOLDOWN),
+      canBreatheFire(false) {
     
     moveCooldown = getMoveCooldownForType();
     
-    // Set AI aggression and health based on enemy type
     if (type == EnemyType::AGGRESSIVE_MONSTER) {
         ai.setAggressive(true);
         health = 2;
+    } else if (type == EnemyType::GREEN_DRAGON) {
+        health = 2;
+        canBreatheFire = true;
+        fireBreathTimer = FIRE_BREATH_COOLDOWN;
     }
     
-    // Add some randomness to movement cooldown for independence
     float randomFactor = 0.8f + (std::rand() % 40) * 0.01f;
     moveCooldown *= randomFactor;
 }
@@ -33,10 +41,10 @@ void Enemy::update() {
     }
     
     updateState();
+    updateFireBreathing();
 }
 
 void Enemy::render() {
-    // Rendering handled by main game loop
 }
 
 bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
@@ -65,7 +73,6 @@ bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
         return false;
     }
     
-    // Determine phasing state
     if (terrain.isLocationBlocked(newPos)) {
         isPhasing = true;
         currentState = EnemyState::PHASING;
@@ -77,7 +84,6 @@ bool Enemy::moveToward(Coordinate target, const BlockGrid& terrain) {
         }
     }
     
-    // Always allow movement for enemies (they can phase)
     position = newPos;
     currentDirection = nextMove;
     moveTimer = GetTime();
@@ -114,9 +120,7 @@ Coordinate Enemy::getCollisionBounds() const {
 }
 
 void Enemy::onCollision(GameObject* other) {
-    // Handle collision with player or other objects
     if (other) {
-        // Could implement knockback or state changes here
     }
 }
 
@@ -135,7 +139,6 @@ void Enemy::takeDamage(int damage) {
     if (health <= 0) {
         destroy();
     } else {
-        // Brief stun when damaged
         currentState = EnemyState::STUNNED;
         stateTimer = GetTime();
     }
@@ -160,7 +163,11 @@ bool Enemy::canMove() const {
     if (isDestroyed) return false;
     
     if (currentState == EnemyState::STUNNED) {
-        return (GetTime() - stateTimer) > 0.5f; // 0.5 second stun
+        return (GetTime() - stateTimer) > 0.5f;
+    }
+    
+    if (currentState == EnemyState::BREATHING_FIRE) {
+        return false;
     }
     
     float currentTime = GetTime();
@@ -181,9 +188,13 @@ void Enemy::updateState() {
                 currentState = EnemyState::NORMAL;
             }
             break;
+        case EnemyState::BREATHING_FIRE:
+            if (currentTime - stateTimer > 1.0f) {
+                currentState = EnemyState::NORMAL;
+            }
+            break;
         case EnemyState::NORMAL:
         case EnemyState::FLEEING:
-            // Normal state management
             break;
     }
 }
@@ -193,6 +204,33 @@ float Enemy::getMoveCooldownForType() const {
         case EnemyType::RED_MONSTER:       return 0.4f;
         case EnemyType::AGGRESSIVE_MONSTER: return 0.25f;
         case EnemyType::FAST_MONSTER:      return 0.15f;
+        case EnemyType::GREEN_DRAGON:      return 0.35f;
     }
     return 0.4f;
+}
+
+void Enemy::updateFireBreathing() {
+    if (!canBreatheFire) return;
+    
+    fireBreathTimer += GetFrameTime();
+}
+
+bool Enemy::shouldBreatheFire(Coordinate playerPos) const {
+    if (!canBreatheFire || isDestroyed) return false;
+    if (currentState == EnemyState::BREATHING_FIRE) return false;
+    if (fireBreathTimer < fireBreathCooldown) return false;
+    
+    float distance = position.calculateDistance(playerPos);
+    return distance < 8.0f && distance > 1.0f;
+}
+
+Direction Enemy::getFireDirection(Coordinate playerPos) const {
+    int deltaRow = playerPos.row - position.row;
+    int deltaCol = playerPos.col - position.col;
+    
+    if (std::abs(deltaRow) > std::abs(deltaCol)) {
+        return (deltaRow > 0) ? Direction::DOWN : Direction::UP;
+    } else {
+        return (deltaCol > 0) ? Direction::RIGHT : Direction::LEFT;
+    }
 }

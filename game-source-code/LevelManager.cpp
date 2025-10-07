@@ -30,60 +30,59 @@ void LevelManager::initializeLevel(int level, BlockGrid& terrain, Player& player
 
 void LevelManager::spawnEnemies(std::vector<Enemy>& enemies) {
     int numEnemies = 2 + currentLevel;
+    int numGreenDragons = (currentLevel >= 3) ? (currentLevel / 3) : 0;
     
     for (int i = 0; i < numEnemies && i < 8; ++i) {
         Coordinate spawnPos = findValidSpawnPosition(
             Player(Coordinate(Coordinate::PLAYABLE_START_ROW, 1)));
         
-        EnemyType type = (i % 3 == 0) ? EnemyType::AGGRESSIVE_MONSTER : 
-                                       EnemyType::RED_MONSTER;
+        EnemyType type;
+        if (i < numGreenDragons) {
+            type = EnemyType::GREEN_DRAGON;
+        } else if (i % 3 == 0) {
+            type = EnemyType::AGGRESSIVE_MONSTER;
+        } else {
+            type = EnemyType::RED_MONSTER;
+        }
+        
         enemies.emplace_back(spawnPos, type);
     }
+    
+    std::cout << "Spawned " << enemies.size() << " enemies (" 
+              << numGreenDragons << " green dragons)" << std::endl;
 }
 
 void LevelManager::spawnRocks(std::vector<Rock>& rocks, const BlockGrid& terrain) {
     std::vector<Coordinate> rockSpawns = terrain.getRockSpawns();
     
     if (rockSpawns.empty()) {
-        std::cout << "No rock spawns in map, generating distributed rock positions" << std::endl;
-        
-        // Create more rocks distributed across the level
-        int numRocks = 4 + (currentLevel / 2); // More rocks in higher levels
-        numRocks = std::min(numRocks, 10); // Cap at 10 rocks maximum
+        int numRocks = 4 + (currentLevel / 2);
+        numRocks = std::min(numRocks, 10);
         
         for (int i = 0; i < numRocks; ++i) {
-            // Distribute rocks across different areas of the map
             int sectionWidth = Coordinate::WORLD_COLS / 3;
-            int section = i % 3; // Distribute across left, middle, right
+            int section = i % 3;
             
             int col = (section * sectionWidth) + 3 + (std::rand() % (sectionWidth - 6));
             int row = Coordinate::PLAYABLE_START_ROW + 3 + (std::rand() % 8);
             
-            // Ensure rocks don't spawn too close to player start
             if (col < 8 && row < Coordinate::PLAYABLE_START_ROW + 5) {
                 col += 8;
             }
             
             rocks.emplace_back(Coordinate(row, col));
-            std::cout << "  Generated rock at (" << row << "," << col << ")" << std::endl;
         }
     } else {
-        std::cout << "Spawning rocks from map positions:" << std::endl;
         for (const auto& rockPos : rockSpawns) {
             rocks.emplace_back(rockPos);
-            std::cout << "  Rock at (" << rockPos.row << "," << rockPos.col << ")" << std::endl;
         }
         
-        // Add extra generated rocks to supplement map rocks
         int extraRocks = std::max(0, (4 + currentLevel / 2) - static_cast<int>(rockSpawns.size()));
         for (int i = 0; i < extraRocks; ++i) {
             Coordinate pos = findValidRockPosition(rockSpawns);
             rocks.emplace_back(pos);
-            std::cout << "  Extra rock at (" << pos.row << "," << pos.col << ")" << std::endl;
         }
     }
-    
-    std::cout << "Total rocks spawned: " << rocks.size() << std::endl;
 }
 
 Coordinate LevelManager::findValidRockPosition(const std::vector<Coordinate>& existingRocks) const {
@@ -92,7 +91,6 @@ Coordinate LevelManager::findValidRockPosition(const std::vector<Coordinate>& ex
         int col = 5 + (std::rand() % (Coordinate::WORLD_COLS - 10));
         Coordinate pos(row, col);
         
-        // Check distance from existing rocks
         bool tooClose = false;
         for (const auto& existing : existingRocks) {
             if (pos.calculateDistance(existing) < 4.0f) {
@@ -101,14 +99,12 @@ Coordinate LevelManager::findValidRockPosition(const std::vector<Coordinate>& ex
             }
         }
         
-        // Check distance from player start
         Coordinate playerStart(Coordinate::PLAYABLE_START_ROW, 1);
         if (!tooClose && pos.calculateDistance(playerStart) > 8.0f) {
             return pos;
         }
     }
     
-    // Fallback position
     return Coordinate(12, 15);
 }
 
@@ -150,7 +146,7 @@ bool LevelManager::isLevelComplete(const std::vector<Enemy>& enemies,
 }
 
 int LevelManager::calculateTimeBonus(float levelTimer, int level) const {
-    float maxTime = 180.0f; // 3 minutes
+    float maxTime = 180.0f;
     float timeRatio = std::max(0.0f, (maxTime - levelTimer) / maxTime);
     float bonusMultiplier = 1.0f + (level - 1) * 0.2f;
     return static_cast<int>(1000 * timeRatio * bonusMultiplier);
@@ -178,7 +174,7 @@ Coordinate LevelManager::findValidSpawnPosition(const Player& player) const {
             return pos;
         }
     }
-    return Coordinate(15, 20); // Fallback position
+    return Coordinate(15, 20);
 }
 
 std::string LevelManager::getLevelMapFile(int level) const {

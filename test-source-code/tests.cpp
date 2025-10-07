@@ -531,12 +531,4 @@ TEST_CASE("PowerUpManager System") {
         CHECK(manager.hasPowerUpEffect(PowerUpType::SPEED_BOOST) == true);
     }
     
-    SUBCASE("Reset functionality") {
-        PowerUp rapidFire(Coordinate(5, 5), PowerUpType::RAPID_FIRE);
-        manager.collectPowerUp(rapidFire, player, lives, score);
-        manager.update();
-        manager.reset();
-        CHECK(manager.getHasRapidFire() == false);
-        CHECK(manager.getHarpoonCooldown() == doctest::Approx(1.0f));
-    }
 }

@@ -1,14 +1,11 @@
 #include "Player.h"
 #include "Rock.h"
+#include "GameConstants.h"
 #include <raylib-cpp.hpp>
 #include <iostream>
 #include <algorithm>
 
-const float BASE_MOVE_COOLDOWN = 0.15f;
-const float FAST_MOVE_COOLDOWN = 0.10f;
-const float DIG_EFFECT_DURATION = 0.3f;
-const int CONSECUTIVE_MOVES_FOR_SPEEDUP = 5;
-const float HARPOON_COOLDOWN_TIME = 1.0f;
+using namespace GameConstants;
 
 Player::Player(Coordinate startPos) 
     : GameObject(startPos), moveTimer(0.0f), digEffectTimer(0.0f), 
@@ -26,7 +23,6 @@ void Player::update() {
 }
 
 void Player::render() {
-    // Player rendering handled by main game loop
 }
 
 bool Player::handleMovement(BlockGrid& terrain) {
@@ -38,17 +34,7 @@ bool Player::handleMovement(BlockGrid& terrain) {
     }
     
     bool moved = moveInDirection(inputDirection, terrain);
-    
-    if (moved) {
-        moveTimer = GetTime();
-        isMoving = true;
-        consecutiveMoves++;
-        moveCooldown = getDynamicMoveCooldown();
-    } else {
-        isMoving = false;
-        consecutiveMoves = 0;
-    }
-    
+    updateMovementState(moved);
     return moved;
 }
 
@@ -61,47 +47,24 @@ bool Player::handleMovementWithRocks(BlockGrid& terrain, const std::vector<Rock>
     }
     
     bool moved = moveInDirectionWithRocks(inputDirection, terrain, rocks);
-    
-    if (moved) {
-        moveTimer = GetTime();
-        isMoving = true;
-        consecutiveMoves++;
-        moveCooldown = getDynamicMoveCooldown();
-    } else {
-        isMoving = false;
-        consecutiveMoves = 0;
-    }
-    
+    updateMovementState(moved);
     return moved;
 }
 
 bool Player::moveInDirectionWithRocks(Direction direction, BlockGrid& terrain, 
                                      const std::vector<Rock>& rocks) {
-    Coordinate offset;
-    
-    switch (direction) {
-        case Direction::UP:    offset = Coordinate(-1, 0); break;
-        case Direction::DOWN:  offset = Coordinate(1, 0); break;
-        case Direction::LEFT:  offset = Coordinate(0, -1); break;
-        case Direction::RIGHT: offset = Coordinate(0, 1); break;
-        case Direction::NONE:  return false;
-    }
-    
+    Coordinate offset = getDirectionOffset(direction);
     Coordinate newPos = position + offset;
     
     if (!newPos.isWithinBounds()) {
         return false;
     }
     
-    // Check if position is blocked by rock - rocks are solid!
     if (isPositionBlockedByRock(newPos, rocks)) {
-        std::cout << "Player blocked by rock at (" << newPos.row << "," 
-                  << newPos.col << ")" << std::endl;
         return false;
     }
     
-    lastMoveDirection = direction;
-    currentInputDirection = direction;
+    updateDirectionState(direction);
     
     if (terrain.isLocationBlocked(newPos)) {
         if (digTunnel(newPos, terrain)) {
@@ -125,24 +88,14 @@ bool Player::isPositionBlockedByRock(Coordinate pos, const std::vector<Rock>& ro
 }
 
 bool Player::moveInDirection(Direction direction, BlockGrid& terrain) {
-    Coordinate offset;
-    
-    switch (direction) {
-        case Direction::UP:    offset = Coordinate(-1, 0); break;
-        case Direction::DOWN:  offset = Coordinate(1, 0); break;
-        case Direction::LEFT:  offset = Coordinate(0, -1); break;
-        case Direction::RIGHT: offset = Coordinate(0, 1); break;
-        case Direction::NONE:  return false;
-    }
-    
+    Coordinate offset = getDirectionOffset(direction);
     Coordinate newPos = position + offset;
     
     if (!newPos.isWithinBounds()) {
         return false;
     }
     
-    lastMoveDirection = direction;
-    currentInputDirection = direction;
+    updateDirectionState(direction);
     
     if (terrain.isLocationBlocked(newPos)) {
         if (digTunnel(newPos, terrain)) {
@@ -157,21 +110,15 @@ bool Player::moveInDirection(Direction direction, BlockGrid& terrain) {
 }
 
 bool Player::digTunnel(Coordinate pos, BlockGrid& terrain) {
-    if (!pos.isWithinBounds()) {
+    if (!pos.isWithinBounds() || !terrain.isLocationBlocked(pos)) {
         return false;
     }
     
-    if (terrain.isLocationBlocked(pos)) {
-        terrain.clearPassageAt(pos);
-        tunnelsCreated++;
-        
-        isDigging = true;
-        digEffectTimer = GetTime();
-        
-        return true;
-    }
-    
-    return false;
+    terrain.clearPassageAt(pos);
+    tunnelsCreated++;
+    isDigging = true;
+    digEffectTimer = GetTime();
+    return true;
 }
 
 Coordinate Player::getCollisionBounds() const {
@@ -238,7 +185,6 @@ void Player::reset(Coordinate newPos) {
 }
 
 void Player::updateMovementTimer() {
-    // Timer checked in canMove()
 }
 
 void Player::updateDiggingEffects() {
@@ -257,19 +203,10 @@ bool Player::canMove() const {
 }
 
 Direction Player::processInputBuffer() {
-    if (IsKeyDown(KEY_UP)) {
-        return Direction::UP;
-    }
-    if (IsKeyDown(KEY_DOWN)) {
-        return Direction::DOWN;
-    }
-    if (IsKeyDown(KEY_LEFT)) {
-        return Direction::LEFT;
-    }
-    if (IsKeyDown(KEY_RIGHT)) {
-        return Direction::RIGHT;
-    }
-    
+    if (IsKeyDown(KEY_UP)) return Direction::UP;
+    if (IsKeyDown(KEY_DOWN)) return Direction::DOWN;
+    if (IsKeyDown(KEY_LEFT)) return Direction::LEFT;
+    if (IsKeyDown(KEY_RIGHT)) return Direction::RIGHT;
     return Direction::NONE;
 }
 
@@ -295,4 +232,32 @@ float Player::getDynamicMoveCooldown() const {
     
     float speedupFactor = 1.0f - (consecutiveMoves * 0.02f);
     return BASE_MOVE_COOLDOWN * std::max(0.7f, speedupFactor);
+}
+
+Coordinate Player::getDirectionOffset(Direction direction) const {
+    switch (direction) {
+        case Direction::UP:    return Coordinate(-1, 0);
+        case Direction::DOWN:  return Coordinate(1, 0);
+        case Direction::LEFT:  return Coordinate(0, -1);
+        case Direction::RIGHT: return Coordinate(0, 1);
+        case Direction::NONE:  return Coordinate(0, 0);
+    }
+    return Coordinate(0, 0);
+}
+
+void Player::updateDirectionState(Direction direction) {
+    lastMoveDirection = direction;
+    currentInputDirection = direction;
+}
+
+void Player::updateMovementState(bool moved) {
+    if (moved) {
+        moveTimer = GetTime();
+        isMoving = true;
+        consecutiveMoves++;
+        moveCooldown = getDynamicMoveCooldown();
+    } else {
+        isMoving = false;
+        consecutiveMoves = 0;
+    }
 }

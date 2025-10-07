@@ -7,7 +7,6 @@
 #include "EnemyLogic.h"
 #include <vector>
 
-// Forward declaration
 class Rock;
 
 class Player : public GameObject, public Collidable {
@@ -65,6 +64,10 @@ private:
     void updateMovementStats();
     float getDynamicMoveCooldown() const;
     bool isPositionBlockedByRock(Coordinate pos, const std::vector<Rock>& rocks) const;
+    
+    Coordinate getDirectionOffset(Direction direction) const;
+    void updateDirectionState(Direction direction);
+    void updateMovementState(bool moved);
 };
 
 #endif // PLAYER_H

@@ -101,6 +101,7 @@ private:
         handleGameInput();
         updateGameObjects();
         powerUpManager.update();
+        powerUpManager.applySpeedReset(player);
         checkAllCollisions();
         checkLevelProgression();
         spawnPowerUps();

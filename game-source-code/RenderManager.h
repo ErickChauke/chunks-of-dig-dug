@@ -9,6 +9,7 @@
 #include "PowerUp.h"
 #include "Rock.h"
 #include "BlockGrid.h"
+#include "FireProjectile.h"
 
 class RenderManager {
 private:
@@ -26,6 +27,7 @@ public:
     void drawHarpoons(const std::vector<Harpoon>& harpoons, bool hasPowerShot);
     void drawPowerUps(const std::vector<PowerUp>& powerUps);
     void drawRocks(const std::vector<Rock>& rocks, const Player& player);
+    void drawFireProjectiles(const std::vector<FireProjectile>& fires);
     void drawSkyCell(int x, int y);
 
 private:

@@ -130,8 +130,15 @@ void RenderManager::drawDestroyedEnemy(int x, int y, float progress) {
 }
 
 void RenderManager::drawActiveEnemy(int x, int y, const Enemy& enemy) {
-    Color color = (enemy.getEnemyType() == EnemyType::AGGRESSIVE_MONSTER) ? 
-                 Color{139, 0, 0, 255} : RED;
+    Color color;
+    
+    if (enemy.getEnemyType() == EnemyType::GREEN_DRAGON) {
+        color = GREEN;
+    } else if (enemy.getEnemyType() == EnemyType::AGGRESSIVE_MONSTER) {
+        color = Color{139, 0, 0, 255};
+    } else {
+        color = RED;
+    }
     
     if (enemy.getIsPhasing()) {
         float pulse = AnimationSystem::pulse(6.0f);
@@ -142,6 +149,10 @@ void RenderManager::drawActiveEnemy(int x, int y, const Enemy& enemy) {
     DrawCircleLines(x, y, 15, MAROON);
     DrawCircle(x - 5, y - 5, 2, BLACK);
     DrawCircle(x + 5, y - 5, 2, BLACK);
+    
+    if (enemy.getEnemyType() == EnemyType::GREEN_DRAGON) {
+        DrawCircle(x, y + 8, 3, ORANGE);
+    }
 }
 
 void RenderManager::drawHarpoons(const std::vector<Harpoon>& harpoons, 
@@ -219,6 +230,32 @@ void RenderManager::drawRocks(const std::vector<Rock>& rocks, const Player& play
         DrawCircle(screenX, screenY, 18, rockColor);
         DrawCircleLines(screenX, screenY, 18, WHITE);
         DrawText("ROCK", screenX - 15, screenY - 6, 12, WHITE);
+    }
+}
+
+void RenderManager::drawFireProjectiles(const std::vector<FireProjectile>& fires) {
+    for (const auto& fire : fires) {
+        if (!fire.isActive()) continue;
+        
+        const auto& trail = fire.getTrail();
+        float pulse = AnimationSystem::pulse(15.0f);
+        
+        for (size_t i = 0; i < trail.size(); ++i) {
+            Coordinate pos = trail[i];
+            int screenX = pos.col * cellSize + cellSize / 2;
+            int screenY = pos.row * cellSize + cellSize / 2;
+            
+            float alpha = (i + 1.0f) / trail.size();
+            Color fireColor = AnimationSystem::lerpColor(ORANGE, RED, pulse);
+            fireColor = ColorAlpha(fireColor, alpha);
+            
+            int size = (i == trail.size() - 1) ? 8 : 5;
+            DrawCircle(screenX, screenY, size, fireColor);
+            
+            if (i == trail.size() - 1) {
+                DrawCircleLines(screenX, screenY, size + 2, YELLOW);
+            }
+        }
     }
 }
 

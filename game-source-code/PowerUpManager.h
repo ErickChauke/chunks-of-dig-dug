@@ -15,6 +15,7 @@ private:
     float harpoonCooldown;
     bool hasRapidFire;
     bool hasPowerShot;
+    Player* playerRef;
 
 public:
     PowerUpManager();
@@ -36,10 +37,14 @@ public:
     float getTimeSinceLastCollection() const;
     
     void reset();
+    void applySpeedReset(Player& player);
+    void setPlayerReference(Player* player);
+    Player* getPlayerReference();
 
 private:
     void handlePowerUpExpiration(PowerUpType type);
     void updatePowerUpEffects();
+    void removeExistingPowerUp(PowerUpType type);
 };
 
 #endif // POWERUPMANAGER_H

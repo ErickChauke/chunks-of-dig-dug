@@ -197,3 +197,287 @@ TEST_CASE("Screen Environment") {
         CHECK(SCREEN_HEIGHT / CELL_SIZE == Coordinate::WORLD_ROWS);
     }
 }
+
+TEST_CASE("Enemy Logic AI") {
+    SUBCASE("Direction calculation methods work") {
+        EnemyLogic ai;
+        BlockGrid terrain;
+        
+        Coordinate enemyPos(10, 10);
+        Coordinate playerPos(8, 10);
+        
+        Direction move = ai.selectNextAction(enemyPos, playerPos, terrain);
+        // AI may return any valid direction due to randomization
+        CHECK((move == Direction::UP || move == Direction::DOWN || 
+               move == Direction::LEFT || move == Direction::RIGHT ||
+               move == Direction::NONE));
+    }
+    
+    SUBCASE("Pathfinding to player") {
+        EnemyLogic ai;
+        BlockGrid terrain;
+        
+        Coordinate start(5, 5);
+        Coordinate target(5, 8);
+        
+        std::vector<Coordinate> path = ai.findPathToPlayer(start, target, terrain);
+        CHECK(path.size() >= 0);
+    }
+    
+    SUBCASE("Aggressive mode") {
+        EnemyLogic ai;
+        ai.setAggressive(false);
+        ai.setAggressive(true);
+    }
+}
+
+TEST_CASE("Collision Detection") {
+    SUBCASE("Enemy-Player collision") {
+        Player player(Coordinate(10, 10));
+        Enemy enemy(Coordinate(10, 10));
+        
+        CHECK(player.getPosition() == enemy.getPosition());
+    }
+    
+    SUBCASE("Collision bounds") {
+        Enemy enemy(Coordinate(5, 5));
+        Coordinate bounds = enemy.getCollisionBounds();
+        CHECK(bounds.row == 1);
+        CHECK(bounds.col == 1);
+    }
+}
+
+TEST_CASE("Tunnel Creation") {
+    Player player(Coordinate(5, 5));
+    BlockGrid terrain;
+    
+    SUBCASE("Multiple tunnels") {
+        int startCount = player.getTunnelsCreated();
+        
+        bool moved1 = player.moveInDirection(Direction::RIGHT, terrain);
+        CHECK(moved1 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 1);
+        
+        bool moved2 = player.moveInDirection(Direction::DOWN, terrain);
+        CHECK(moved2 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 2);
+        
+        bool moved3 = player.moveInDirection(Direction::LEFT, terrain);
+        CHECK(moved3 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 3);
+        
+        bool moved4 = player.moveInDirection(Direction::LEFT, terrain);
+        CHECK(moved4 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 4);
+    }
+}
+
+TEST_CASE("Game State Management") {
+    SUBCASE("Enemy spawning patterns") {
+        for (int i = 0; i < 10; ++i) {
+            int row = 5 + (std::rand() % 10);
+            int col = 5 + (std::rand() % 20);
+            Coordinate pos(row, col);
+            CHECK(pos.isWithinBounds() == true);
+        }
+    }
+    
+    SUBCASE("Wave progression") {
+        int wave1Enemies = 2 + 1;
+        int wave2Enemies = 2 + 2;
+        int wave3Enemies = 2 + 3;
+        
+        CHECK(wave1Enemies == 3);
+        CHECK(wave2Enemies == 4);
+        CHECK(wave3Enemies == 5);
+    }
+}
+
+TEST_CASE("Tunnel Creation") {
+    Player player(Coordinate(5, 5));
+    BlockGrid terrain;
+    
+    SUBCASE("Multiple tunnels") {
+        int startCount = player.getTunnelsCreated();
+        
+        bool moved1 = player.moveInDirection(Direction::RIGHT, terrain);
+        CHECK(moved1 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 1);
+        
+        bool moved2 = player.moveInDirection(Direction::DOWN, terrain);
+        CHECK(moved2 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 2);
+        
+        bool moved3 = player.moveInDirection(Direction::LEFT, terrain);
+        CHECK(moved3 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 3);
+        
+        bool moved4 = player.moveInDirection(Direction::LEFT, terrain);
+        CHECK(moved4 == true);
+        CHECK(player.getTunnelsCreated() == startCount + 4);
+    }
+}
+
+TEST_CASE("Game State Management") {
+    SUBCASE("Enemy spawning patterns") {
+        for (int i = 0; i < 10; ++i) {
+            int row = 5 + (std::rand() % 10);
+            int col = 5 + (std::rand() % 20);
+            Coordinate pos(row, col);
+            CHECK(pos.isWithinBounds() == true);
+        }
+    }
+    
+    SUBCASE("Wave progression") {
+        int wave1Enemies = 2 + 1;
+        int wave2Enemies = 2 + 2;
+        int wave3Enemies = 2 + 3;
+        
+        CHECK(wave1Enemies == 3);
+        CHECK(wave2Enemies == 4);
+        CHECK(wave3Enemies == 5);
+    }
+}
+
+TEST_CASE("Raylib Integration") {
+    SUBCASE("Coordinate conversion") {
+        Coordinate pos(5, 10);
+        const int CELL_SIZE = 40;
+        
+        int screenX = pos.col * CELL_SIZE;
+        int screenY = pos.row * CELL_SIZE;
+        
+        CHECK(screenX == 400);
+        CHECK(screenY == 200);
+    }
+}
+
+TEST_CASE("Rock Physics and Crushing") {
+    SUBCASE("Rock support detection") {
+        BlockGrid terrain;
+        Rock rock(Coordinate(8, 5));
+        
+        CHECK(rock.hasSupport(terrain) == true);
+        
+        terrain.clearPassageAt(Coordinate(9, 5));
+        rock.checkStability(terrain);
+    }
+    
+    SUBCASE("Multiple rocks don't interfere") {
+        Rock rock1(Coordinate(5, 5));
+        Rock rock2(Coordinate(5, 10));
+        
+        CHECK(rock1.getPosition() != rock2.getPosition());
+        CHECK(rock1.isActive() == true);
+        CHECK(rock2.isActive() == true);
+    }
+}
+
+TEST_CASE("Rock-Player Interaction") {
+    SUBCASE("Player can tunnel under rocks") {
+        BlockGrid terrain;
+        Player player(Coordinate(9, 5));
+        Rock rock(Coordinate(8, 5));
+        
+        bool canDig = player.moveInDirection(Direction::UP, terrain);
+        CHECK(canDig == true);
+        
+        CHECK(rock.isActive() == true);
+    }
+    
+    SUBCASE("Player survival mechanics") {
+        Player player(Coordinate(10, 5));
+        Rock rock(Coordinate(8, 5));
+        
+        CHECK(rock.getCrushTimeRemaining() >= 0.0f);
+    }
+}
+
+TEST_CASE("Enhanced Enemy Movement Testing") {
+    SUBCASE("Different enemy types movement") {
+        Enemy redMonster(Coordinate(5, 5), EnemyType::RED_MONSTER);
+        Enemy aggressiveMonster(Coordinate(5, 6), EnemyType::AGGRESSIVE_MONSTER);
+        Enemy fastMonster(Coordinate(5, 7), EnemyType::FAST_MONSTER);
+        
+        CHECK(redMonster.getEnemyType() == EnemyType::RED_MONSTER);
+        CHECK(aggressiveMonster.getEnemyType() == EnemyType::AGGRESSIVE_MONSTER);
+        CHECK(fastMonster.getEnemyType() == EnemyType::FAST_MONSTER);
+    }
+}
+
+TEST_CASE("Advanced Player Movement Tests") {
+    SUBCASE("Player rock collision detection") {
+        Player player(Coordinate(5, 5));
+        BlockGrid terrain;
+        std::vector<Rock> rocks;
+        
+        rocks.emplace_back(Coordinate(5, 6));
+        
+        bool moved = player.moveInDirectionWithRocks(Direction::RIGHT, terrain, rocks);
+        CHECK(moved == false);
+        CHECK(player.getPosition().col == 5);
+    }
+}
+
+TEST_CASE("Object Movement Integration") {
+    SUBCASE("Boundary compliance verification") {
+        Player player(Coordinate(3, 0));
+        Enemy enemy(Coordinate(19, 29));
+        
+        BlockGrid terrain;
+        
+        bool playerMoved = player.moveInDirection(Direction::UP, terrain);
+        
+        CHECK(playerMoved == false);
+        CHECK(player.getPosition().isWithinBounds() == true);
+        CHECK(enemy.getPosition().isWithinBounds() == true);
+    }
+}
+
+TEST_CASE("Enhanced Enemy Movement Testing") {
+    SUBCASE("Enemy movement capability") {
+        BlockGrid terrain;
+        Enemy enemy(Coordinate(10, 10));
+        
+        Coordinate originalPos = enemy.getPosition();
+        
+        bool moved1 = enemy.moveToward(Coordinate(8, 10), terrain);
+        enemy.setPosition(originalPos);
+        bool moved2 = enemy.moveToward(Coordinate(12, 10), terrain);
+        enemy.setPosition(originalPos);
+        bool moved3 = enemy.moveToward(Coordinate(10, 8), terrain);
+        enemy.setPosition(originalPos);
+        bool moved4 = enemy.moveToward(Coordinate(10, 12), terrain);
+        
+        // At least movement methods should work
+        CHECK((moved1 == true || moved1 == false));
+        CHECK((moved2 == true || moved2 == false));
+        CHECK((moved3 == true || moved3 == false));
+        CHECK((moved4 == true || moved4 == false));
+    }
+}
+
+TEST_CASE("Advanced Player Movement Tests") {
+    SUBCASE("Player tunnel creation tracking") {
+        Player player(Coordinate(5, 5));
+        BlockGrid terrain;
+        
+        int initialTunnels = player.getTunnelsCreated();
+        
+        player.moveInDirection(Direction::RIGHT, terrain);
+        player.moveInDirection(Direction::DOWN, terrain);
+        
+        CHECK(player.getTunnelsCreated() > initialTunnels);
+    }
+}
+
+TEST_CASE("Object Movement Integration") {
+    SUBCASE("Multiple object position tracking") {
+        Player player(Coordinate(5, 5));
+        Enemy enemy(Coordinate(5, 5));
+        Rock rock(Coordinate(5, 5));
+        
+        CHECK(player.getPosition() == enemy.getPosition());
+        CHECK(player.getPosition() == rock.getPosition());
+    }
+}

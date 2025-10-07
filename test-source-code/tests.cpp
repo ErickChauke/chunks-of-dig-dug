@@ -834,3 +834,45 @@ TEST_CASE("Edge Cases and Boundary Conditions") {
         CHECK(player.moveInDirection(Direction::RIGHT, terrain) == false);
     }
 }
+
+
+
+TEST_CASE("Harpoon-Player Connection Mechanics") {
+    SUBCASE("Harpoon tracks player position") {
+        Player player(Coordinate(5, 5));
+        Harpoon harpoon(player.getPosition(), Direction::RIGHT, &player);
+        
+        Coordinate initialStart = harpoon.getSegments()[0];
+        CHECK(initialStart == player.getPosition());
+        
+        BlockGrid terrain;
+        player.moveInDirection(Direction::DOWN, terrain);
+        harpoon.updatePlayerConnection();
+        
+        Coordinate updatedStart = harpoon.getSegments()[0];
+        CHECK(updatedStart == player.getPosition());
+    }
+    
+    SUBCASE("Harpoon segments maintained") {
+        Player player(Coordinate(5, 5));
+        Harpoon harpoon(player.getPosition(), Direction::RIGHT, &player);
+        
+        harpoon.update();
+        BlockGrid terrain;
+        player.moveInDirection(Direction::DOWN, terrain);
+        harpoon.updatePlayerConnection();
+        
+        CHECK(harpoon.getSegments().size() >= 1);
+        CHECK(harpoon.isActive() == true);
+    }
+    
+    SUBCASE("Multiple independent harpoons") {
+        Player player(Coordinate(10, 10));
+        Harpoon h1(player.getPosition(), Direction::UP, &player);
+        Harpoon h2(player.getPosition(), Direction::RIGHT, &player);
+        
+        CHECK(h1.getDirection() != h2.getDirection());
+        CHECK(h1.isActive() == true);
+        CHECK(h2.isActive() == true);
+    }
+}

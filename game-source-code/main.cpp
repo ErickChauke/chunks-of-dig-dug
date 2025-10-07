@@ -8,6 +8,7 @@
 #include "Harpoon.h"
 #include "PowerUp.h"
 #include "Rock.h"
+#include "FireProjectile.h"
 #include "RenderManager.h"
 #include "UIManager.h"
 #include "InputManager.h"
@@ -40,6 +41,7 @@ private:
     std::vector<Harpoon> harpoons;
     std::vector<PowerUp> powerUps;
     std::vector<Rock> rocks;
+    std::vector<FireProjectile> fireProjectiles;
     
     int score;
     int enemiesDefeated;
@@ -119,6 +121,7 @@ private:
         updateHarpoons();
         updatePowerUps();
         updateRocks();
+        updateFireProjectiles();
     }
     
     void updateEnemies() {
@@ -128,6 +131,18 @@ private:
                 
                 if (!enemy.getIsDestroyed()) {
                     enemy.moveToward(player.getPosition(), terrain);
+                    
+                    if (enemy.shouldBreatheFire(player.getPosition())) {
+                        Direction fireDir = enemy.getFireDirection(player.getPosition());
+                        fireProjectiles.emplace_back(enemy.getPosition(), fireDir);
+                        
+                        Coordinate pos = enemy.getPosition();
+                        Vector2 particlePos = {
+                            pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+                            pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+                        };
+                        particles.emit(particlePos, ORANGE, 8);
+                    }
                 }
                 enemy.update();
                 
@@ -192,6 +207,25 @@ private:
         }
     }
     
+    void updateFireProjectiles() {
+        for (auto& fire : fireProjectiles) {
+            if (fire.isActive()) {
+                fire.update();
+                
+                if (fire.checkPlayerHit(player.getPosition())) {
+                    playerHitByFire();
+                    fire.setActive(false);
+                }
+            }
+        }
+        
+        fireProjectiles.erase(
+            std::remove_if(fireProjectiles.begin(), fireProjectiles.end(),
+                [](const FireProjectile& f) { return !f.isActive(); }),
+            fireProjectiles.end()
+        );
+    }
+    
     void handleGameInput() {
         player.handleMovementWithRocks(terrain, rocks);
         
@@ -232,7 +266,6 @@ private:
             return;
         }
         
-        int oldScore = score;
         collisionManager.checkHarpoonEnemyCollisions(harpoons, enemies, score, 
                                                    enemiesDefeated, 
                                                    levelManager.getCurrentLevel());
@@ -268,6 +301,24 @@ private:
         };
         particles.emitBurst(particlePos, RED, 20);
         screenShake.shake(15.0f, 0.4f);
+        
+        playerLives--;
+        
+        if (playerLives <= 0) {
+            stateManager.changeState(GameState::GAME_OVER);
+        } else {
+            player.reset(Coordinate(Coordinate::PLAYABLE_START_ROW, 1));
+        }
+    }
+    
+    void playerHitByFire() {
+        Coordinate pos = player.getPosition();
+        Vector2 particlePos = {
+            pos.col * CELL_SIZE + CELL_SIZE / 2.0f,
+            pos.row * CELL_SIZE + CELL_SIZE / 2.0f
+        };
+        particles.emitBurst(particlePos, ORANGE, 15);
+        screenShake.shake(12.0f, 0.3f);
         
         playerLives--;
         
@@ -358,6 +409,7 @@ private:
                                    player, enemies, powerUps, rocks);
         levelTimer = 0.0f;
         harpoons.clear();
+        fireProjectiles.clear();
         particles.clear();
         
         if (!powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST)) {
@@ -430,6 +482,7 @@ private:
         renderer.drawTerrain(terrain);
         renderer.drawEnemies(enemies);
         renderer.drawHarpoons(harpoons, powerUpManager.getHasPowerShot());
+        renderer.drawFireProjectiles(fireProjectiles);
         renderer.drawPowerUps(powerUps);
         renderer.drawPlayer(player, 
                           powerUpManager.hasPowerUpEffect(PowerUpType::SPEED_BOOST),

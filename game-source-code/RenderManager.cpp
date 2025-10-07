@@ -77,6 +77,7 @@ void RenderManager::drawPlayer(const Player& player, bool hasSpeedBoost,
     if (hasSpeedBoost) {
         float pulse = AnimationSystem::pulse(8.0f);
         DrawCircleLines(screenX, screenY, 20, ColorAlpha(YELLOW, pulse));
+        DrawCircleLines(screenX, screenY, 24, ColorAlpha(SKYBLUE, pulse * 0.5f));
     }
     
     float scale = 1.0f;
@@ -199,14 +200,26 @@ void RenderManager::drawPowerUps(const std::vector<PowerUp>& powerUps) {
         int screenX = pos.col * cellSize + cellSize / 2;
         int screenY = pos.row * cellSize + cellSize / 2;
         
-        float pulse = AnimationSystem::pulse(5.0f);
-        float bounce = AnimationSystem::wave(3.0f) * 3;
+        float pulse = AnimationSystem::pulse(4.0f);
+        float bounce = AnimationSystem::wave(2.0f) * 6;
+        float scale = 1.0f + pulse * 0.3f;
         
         Color color = getPowerUpColor(powerUp.getType());
-        color = ColorAlpha(color, 0.7f + pulse * 0.3f);
+        Color glowColor = ColorAlpha(color, 0.4f);
         
-        DrawCircle(screenX, screenY - static_cast<int>(bounce), 12, color);
-        DrawCircleLines(screenX, screenY - static_cast<int>(bounce), 14, WHITE);
+        int baseY = screenY - static_cast<int>(bounce);
+        int size = static_cast<int>(18 * scale);
+        
+        DrawCircle(screenX, baseY, size + 6, glowColor);
+        DrawCircle(screenX, baseY, size + 3, ColorAlpha(WHITE, 0.3f));
+        DrawCircle(screenX, baseY, size, color);
+        DrawCircleLines(screenX, baseY, size + 1, WHITE);
+        
+        std::string symbol = getPowerUpSymbol(powerUp.getType());
+        int symbolSize = 20;
+        int symbolWidth = MeasureText(symbol.c_str(), symbolSize);
+        DrawText(symbol.c_str(), screenX - symbolWidth/2, 
+                baseY - symbolSize/2, symbolSize, BLACK);
     }
 }
 
@@ -259,13 +272,24 @@ void RenderManager::drawFireProjectiles(const std::vector<FireProjectile>& fires
     }
 }
 
+std::string RenderManager::getPowerUpSymbol(PowerUpType type) {
+    switch (type) {
+        case PowerUpType::EXTRA_LIFE: return "+";
+        case PowerUpType::SCORE_MULTIPLIER: return "$";
+        case PowerUpType::RAPID_FIRE: return "R";
+        case PowerUpType::POWER_SHOT: return "P";
+        case PowerUpType::SPEED_BOOST: return "S";
+        default: return "?";
+    }
+}
+
 Color RenderManager::getPowerUpColor(PowerUpType type) {
     switch (type) {
-        case PowerUpType::EXTRA_LIFE: return GREEN;
+        case PowerUpType::EXTRA_LIFE: return Color{0, 255, 100, 255};
         case PowerUpType::SCORE_MULTIPLIER: return GOLD;
         case PowerUpType::RAPID_FIRE: return Color{0, 255, 255, 255};
         case PowerUpType::POWER_SHOT: return ORANGE;
-        case PowerUpType::SPEED_BOOST: return YELLOW;
+        case PowerUpType::SPEED_BOOST: return Color{255, 255, 0, 255};
         default: return WHITE;
     }
 }

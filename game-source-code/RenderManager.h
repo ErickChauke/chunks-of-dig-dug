@@ -10,6 +10,7 @@
 #include "Rock.h"
 #include "BlockGrid.h"
 #include "FireProjectile.h"
+#include <string>
 
 class RenderManager {
 private:
@@ -36,6 +37,7 @@ private:
     void drawDestroyedEnemy(int x, int y, float progress);
     void drawActiveEnemy(int x, int y, const Enemy& enemy);
     Color getPowerUpColor(PowerUpType type);
+    std::string getPowerUpSymbol(PowerUpType type);
 };
 
 #endif // RENDERMANAGER_H

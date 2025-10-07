@@ -8,6 +8,7 @@
 #include "../game-source-code/EnemyLogic.h"
 #include "../game-source-code/Rock.h"
 #include "../game-source-code/Harpoon.h"
+#include "../game-source-code/LevelManager.h"
 #include "../game-source-code/PowerUpManager.h"
 
 TEST_CASE("Coordinate System") {
@@ -531,4 +532,68 @@ TEST_CASE("PowerUpManager System") {
         CHECK(manager.hasPowerUpEffect(PowerUpType::SPEED_BOOST) == true);
     }
     
+}
+
+TEST_CASE("LevelManager System") {
+    LevelManager levelMgr;
+    
+    SUBCASE("Initialization") {
+        CHECK(levelMgr.getCurrentLevel() == 1);
+        CHECK(levelMgr.getTargetScore() == 1000);
+    }
+    
+    SUBCASE("Level progression") {
+        int initialLevel = levelMgr.getCurrentLevel();
+        levelMgr.nextLevel();
+        CHECK(levelMgr.getCurrentLevel() == initialLevel + 1);
+        CHECK(levelMgr.getTargetScore() > 1000);
+    }
+    
+    SUBCASE("Multiple level progression") {
+        for (int i = 0; i < 3; ++i) {
+            levelMgr.nextLevel();
+        }
+        CHECK(levelMgr.getCurrentLevel() == 4);
+    }
+    
+    SUBCASE("Level completion - all enemies defeated") {
+        std::vector<Enemy> enemies;
+        enemies.emplace_back(Coordinate(5, 5), EnemyType::RED_MONSTER);
+        enemies[0].destroy();
+        
+        bool complete = levelMgr.isLevelComplete(enemies, 0);
+        CHECK(complete == true);
+    }
+    
+    SUBCASE("Level completion - target score reached") {
+        std::vector<Enemy> enemies;
+        enemies.emplace_back(Coordinate(5, 5), EnemyType::RED_MONSTER);
+        
+        bool complete = levelMgr.isLevelComplete(enemies, 1000);
+        CHECK(complete == true);
+    }
+    
+    SUBCASE("Level not complete") {
+        std::vector<Enemy> enemies;
+        enemies.emplace_back(Coordinate(5, 5), EnemyType::RED_MONSTER);
+        
+        bool complete = levelMgr.isLevelComplete(enemies, 500);
+        CHECK(complete == false);
+    }
+    
+    SUBCASE("Time bonus calculation") {
+        int bonus1 = levelMgr.calculateTimeBonus(60.0f, 1);
+        CHECK(bonus1 > 0);
+        
+        int bonus2 = levelMgr.calculateTimeBonus(120.0f, 1);
+        CHECK(bonus2 < bonus1);
+        
+        int bonus3 = levelMgr.calculateTimeBonus(180.0f, 1);
+        CHECK(bonus3 == 0);
+    }
+    
+    SUBCASE("PowerUp spawn timing") {
+        CHECK(levelMgr.shouldSpawnPowerUp(20.0f) == true);
+        CHECK(levelMgr.shouldSpawnPowerUp(5.0f) == false);
+    }
 }

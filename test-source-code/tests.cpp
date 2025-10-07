@@ -9,6 +9,7 @@
 #include "../game-source-code/Rock.h"
 #include "../game-source-code/Harpoon.h"
 #include "../game-source-code/LevelManager.h"
+#include "../game-source-code/GameState.h"
 #include "../game-source-code/PowerUpManager.h"
 
 TEST_CASE("Coordinate System") {
@@ -595,5 +596,54 @@ TEST_CASE("LevelManager System") {
     SUBCASE("PowerUp spawn timing") {
         CHECK(levelMgr.shouldSpawnPowerUp(20.0f) == true);
         CHECK(levelMgr.shouldSpawnPowerUp(5.0f) == false);
+    }
+}
+
+TEST_CASE("GameStateManager System") {
+    GameStateManager stateMgr;
+    
+    SUBCASE("Initial state") {
+        CHECK(stateMgr.getCurrentState() == GameState::MENU);
+    }
+    
+    SUBCASE("Valid state transitions") {
+        CHECK(stateMgr.changeState(GameState::PLAYING) == true);
+        CHECK(stateMgr.getCurrentState() == GameState::PLAYING);
+        
+        CHECK(stateMgr.changeState(GameState::PAUSED) == true);
+        CHECK(stateMgr.getCurrentState() == GameState::PAUSED);
+        
+        CHECK(stateMgr.changeState(GameState::PLAYING) == true);
+        CHECK(stateMgr.getCurrentState() == GameState::PLAYING);
+    }
+    
+    SUBCASE("Invalid transitions blocked") {
+        stateMgr.changeState(GameState::PLAYING);
+        CHECK(stateMgr.changeState(GameState::SETTINGS) == false);
+        CHECK(stateMgr.getCurrentState() == GameState::PLAYING);
+    }
+    
+    SUBCASE("State timer tracking") {
+        stateMgr.changeState(GameState::PLAYING);
+        stateMgr.update(0.5f);
+        CHECK(stateMgr.getStateTime() >= 0.5f);
+    }
+    
+    SUBCASE("Previous state tracking") {
+        stateMgr.changeState(GameState::PLAYING);
+        stateMgr.changeState(GameState::PAUSED);
+        CHECK(stateMgr.getPreviousState() == GameState::PLAYING);
+    }
+    
+    SUBCASE("State names") {
+        CHECK(GameStateManager::getStateName(GameState::MENU) == "MENU");
+        CHECK(GameStateManager::getStateName(GameState::PLAYING) == "PLAYING");
+        CHECK(GameStateManager::getStateName(GameState::PAUSED) == "PAUSED");
+        CHECK(GameStateManager::getStateName(GameState::GAME_OVER) == "GAME_OVER");
+    }
+    
+    SUBCASE("Transition validation") {
+        CHECK(GameStateManager::isValidTransition(GameState::MENU, GameState::PLAYING) == true);
+        CHECK(GameStateManager::isValidTransition(GameState::PLAYING, GameState::SETTINGS) == false);
     }
 }

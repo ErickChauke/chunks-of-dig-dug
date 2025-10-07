@@ -647,3 +647,46 @@ TEST_CASE("GameStateManager System") {
         CHECK(GameStateManager::isValidTransition(GameState::PLAYING, GameState::SETTINGS) == false);
     }
 }
+
+TEST_CASE("Enhanced Rock Crushing Mechanics") {
+    SUBCASE("Rock stability with support") {
+        BlockGrid terrain;
+        Rock rock(Coordinate(8, 5));
+        
+        CHECK(rock.getIsFalling() == false);
+        CHECK(rock.hasSupport(terrain) == true);
+    }
+    
+    SUBCASE("Rock falls when support removed") {
+        BlockGrid terrain;
+        Rock rock(Coordinate(8, 5));
+        
+        terrain.clearPassageAt(Coordinate(9, 5));
+        rock.checkStability(terrain);
+        rock.applyGravity(terrain);
+    }
+    
+    
+    
+    SUBCASE("Crush timer for falling rocks") {
+        Rock rock(Coordinate(8, 5));
+        float timeRemaining = rock.getCrushTimeRemaining();
+        CHECK(timeRemaining >= 0.0f);
+    }
+    
+    SUBCASE("Rock collision bounds") {
+        Rock rock(Coordinate(10, 10));
+        Coordinate bounds = rock.getCollisionBounds();
+        CHECK(bounds.row == 1);
+        CHECK(bounds.col == 1);
+    }
+    
+    SUBCASE("Multiple rocks independent") {
+        Rock rock1(Coordinate(5, 5));
+        Rock rock2(Coordinate(10, 10));
+        
+        CHECK(rock1.isActive() == true);
+        CHECK(rock2.isActive() == true);
+        CHECK(rock1.getPosition() != rock2.getPosition());
+    }
+}

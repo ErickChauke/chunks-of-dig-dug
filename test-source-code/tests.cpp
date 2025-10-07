@@ -760,3 +760,77 @@ TEST_CASE("Complex Multi-Object Interactions") {
         CHECK(powerUps[0].isActive() == true);
     }
 }
+
+TEST_CASE("Edge Cases and Boundary Conditions") {
+    SUBCASE("Player at exact boundaries") {
+        Player player(Coordinate(Coordinate::PLAYABLE_START_ROW, 0));
+        BlockGrid terrain;
+        
+        CHECK(player.getPosition().isWithinBounds() == true);
+        
+        bool movedLeft = player.moveInDirection(Direction::LEFT, terrain);
+        CHECK(movedLeft == false);
+        
+        bool movedUp = player.moveInDirection(Direction::UP, terrain);
+        CHECK(movedUp == false);
+    }
+    
+    SUBCASE("Enemy at boundaries") {
+        Enemy enemy(Coordinate(Coordinate::PLAYABLE_START_ROW, 0), EnemyType::RED_MONSTER);
+        BlockGrid terrain;
+        
+        Coordinate target(Coordinate::PLAYABLE_START_ROW - 1, 0);
+        enemy.moveToward(target, terrain);
+        
+        CHECK(enemy.getPosition().isWithinBounds() == true);
+    }
+    
+    SUBCASE("Harpoon at boundaries") {
+        Player player(Coordinate(Coordinate::PLAYABLE_START_ROW, 0));
+        Harpoon harpoon(player.getPosition(), Direction::LEFT, &player);
+        
+        harpoon.update();
+        CHECK(harpoon.isActive() == true);
+    }
+    
+    SUBCASE("Rock at bottom boundary") {
+        Rock rock(Coordinate(Coordinate::WORLD_ROWS - 1, 15));
+        BlockGrid terrain;
+        
+        CHECK(rock.hasSupport(terrain) == true);
+        rock.applyGravity(terrain);
+        CHECK(rock.getPosition().row == Coordinate::WORLD_ROWS - 1);
+    }
+    
+    SUBCASE("Empty enemies completion") {
+        LevelManager levelMgr;
+        std::vector<Enemy> enemies;
+        
+        bool complete = levelMgr.isLevelComplete(enemies, 500);
+        CHECK(complete == true);
+    }
+    
+    SUBCASE("Maximum level progression") {
+        LevelManager levelMgr;
+        for (int i = 0; i < 15; ++i) {
+            levelMgr.nextLevel();
+        }
+        CHECK(levelMgr.getCurrentLevel() > 10);
+    }
+    
+    SUBCASE("Corner boundaries - top left") {
+        Player player(Coordinate(Coordinate::PLAYABLE_START_ROW, 0));
+        BlockGrid terrain;
+        
+        CHECK(player.moveInDirection(Direction::UP, terrain) == false);
+        CHECK(player.moveInDirection(Direction::LEFT, terrain) == false);
+    }
+    
+    SUBCASE("Corner boundaries - bottom right") {
+        Player player(Coordinate(Coordinate::WORLD_ROWS - 1, Coordinate::WORLD_COLS - 1));
+        BlockGrid terrain;
+        
+        CHECK(player.moveInDirection(Direction::DOWN, terrain) == false);
+        CHECK(player.moveInDirection(Direction::RIGHT, terrain) == false);
+    }
+}

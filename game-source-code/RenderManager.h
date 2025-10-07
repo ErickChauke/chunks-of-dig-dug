@@ -27,6 +27,13 @@ public:
     void drawPowerUps(const std::vector<PowerUp>& powerUps);
     void drawRocks(const std::vector<Rock>& rocks, const Player& player);
     void drawSkyCell(int x, int y);
+
+private:
+    void drawEarthBlock(int x, int y);
+    void drawTunnelCell(int x, int y);
+    void drawDestroyedEnemy(int x, int y, float progress);
+    void drawActiveEnemy(int x, int y, const Enemy& enemy);
+    Color getPowerUpColor(PowerUpType type);
 };
 
 #endif // RENDERMANAGER_H

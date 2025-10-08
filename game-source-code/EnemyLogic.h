@@ -6,22 +6,33 @@
 #include <vector>
 
 /**
- * @brief Direction enumeration for movement
+ * @file EnemyLogic.h
+ * @brief AI decision-making system for enemy movement
+ */
+
+/**
+ * @enum Direction
+ * @brief Movement directions for grid-based navigation
  */
 enum class Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    NONE
+    UP,    ///< Move one cell up (row - 1)
+    DOWN,  ///< Move one cell down (row + 1)
+    LEFT,  ///< Move one cell left (col - 1)
+    RIGHT, ///< Move one cell right (col + 1)
+    NONE   ///< No movement
 };
 
 /**
- * @brief Makes movement decisions for enemies
+ * @class EnemyLogic
+ * @brief AI controller for enemy pathfinding
  * 
- * The EnemyLogic class handles AI behavior for monsters,
- * including pathfinding, phase-through mechanics, and
- * decision making based on player position.
+ * Implements hybrid intelligent/random AI behavior:
+ * - 15-25% random movement (prevents predictability)
+ * - Stuck detection and recovery
+ * - Distance-based strategy (close=direct, far=pathfinding)
+ * - Randomized timing per enemy (prevents synchronization)
+ * 
+ * @note Each Enemy has its own EnemyLogic instance
  */
 class EnemyLogic {
 private:
@@ -33,32 +44,32 @@ private:
 
 public:
     /**
-     * @brief Construct a new EnemyLogic object
+     * @brief Construct AI controller with randomized timing
      */
     EnemyLogic();
     
     /**
-     * @brief Select the next movement direction for an enemy
-     * @param currentPos Current enemy position
-     * @param playerPos Current player position
-     * @param environment Game environment grid
-     * @return Direction Next movement direction
+     * @brief Determine next movement direction
+     * @param currentPos Enemy's current position
+     * @param playerPos Player's current position
+     * @param environment Game terrain for pathfinding
+     * @return Direction Best direction to move
      */
     Direction selectNextAction(Coordinate currentPos, Coordinate playerPos, 
                               const BlockGrid& environment);
     
     /**
-     * @brief Determine if enemy should phase through walls
-     * @param currentPos Current enemy position
-     * @param playerPos Current player position
-     * @param environment Game environment grid
-     * @return true if should phase through, false otherwise
+     * @brief Check if enemy should phase through walls
+     * @param currentPos Enemy position
+     * @param playerPos Player position
+     * @param environment Game terrain
+     * @return true if should phase through
      */
     bool shouldPhaseThrough(Coordinate currentPos, Coordinate playerPos, 
                            const BlockGrid& environment);
     
     /**
-     * @brief Find optimal path to player using A* pathfinding
+     * @brief Find path to player using pathfinding
      * @param start Starting position
      * @param target Target position
      * @param environment Game environment
@@ -68,47 +79,16 @@ public:
                                            const BlockGrid& environment);
     
     /**
-     * @brief Set aggressive behavior mode
-     * @param aggressive Whether enemy should be more aggressive
+     * @brief Enable aggressive pursuit behavior
+     * @param aggressive true for aggressive mode
      */
     void setAggressive(bool aggressive);
 
 private:
-    /**
-     * @brief Get coordinate offset for a direction
-     * @param dir Direction to get offset for
-     * @return Coordinate Offset for the direction
-     */
     Coordinate getDirectionOffset(Direction dir) const;
-    
-    /**
-     * @brief Find best direction toward target
-     * @param from Starting position
-     * @param to Target position
-     * @return Direction Best direction to move
-     */
     Direction findDirectionToward(Coordinate from, Coordinate to) const;
-    
-    /**
-     * @brief Check if position is safe for enemy movement
-     * @param pos Position to check
-     * @param environment Game environment
-     * @return true if safe, false otherwise
-     */
     bool isSafePosition(Coordinate pos, const BlockGrid& environment) const;
-    
-    /**
-     * @brief Calculate heuristic for A* pathfinding
-     * @param from Starting position
-     * @param to Target position
-     * @return int Heuristic value
-     */
     int calculateHeuristic(Coordinate from, Coordinate to) const;
-    
-    /**
-     * @brief Get random direction when stuck
-     * @return Direction Random valid direction
-     */
     Direction getRandomDirection() const;
 };
 

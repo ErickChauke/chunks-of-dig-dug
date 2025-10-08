@@ -5,6 +5,20 @@
 #include <raylib-cpp.hpp>
 #include <cmath>
 
+/**
+ * @file AnimationSystem.h
+ * @brief Animation utilities and easing functions
+ */
+
+/**
+ * @class AnimationSystem
+ * @brief Static utility functions for smooth animations
+ * 
+ * Provides interpolation, easing, and oscillation functions
+ * for visual effects. All methods are static utilities.
+ * 
+ * @note No instance needed - all methods are static
+ */
 class AnimationSystem {
 public:
     static float lerp(float start, float end, float t) {

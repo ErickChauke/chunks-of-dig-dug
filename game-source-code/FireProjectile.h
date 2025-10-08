@@ -6,6 +6,29 @@
 #include "EnemyLogic.h"
 #include "GameConstants.h"
 
+/**
+ * @file FireProjectile.h
+ * @brief Fire breath projectile for GREEN_DRAGON enemies
+ */
+
+/**
+ * @class FireProjectile
+ * @brief Ranged fire projectile fired by GREEN_DRAGON enemies
+ * 
+ * FireProjectile is a moving hazard that:
+ * - Travels in straight line (UP/DOWN/LEFT/RIGHT)
+ * - Maintains visual trail of recent positions
+ * - Damages player on contact
+ * - Self-destructs after 2 seconds or hitting boundary
+ * 
+ * Technical details:
+ * - Speed: 3 cells per second
+ * - Lifetime: 2 seconds maximum
+ * - Trail length: 5 positions
+ * - Direction: Set on creation, doesn't change
+ * 
+ * @note Only GREEN_DRAGON enemies can create FireProjectiles
+ */
 class FireProjectile : public GameObject, public Collidable {
 private:
     Direction direction;
@@ -15,12 +38,20 @@ private:
     std::vector<Coordinate> trail;
     
 public:
+    /**
+     * @brief Construct fire projectile
+     * @param startPos Initial position (enemy location)
+     * @param dir Travel direction
+     */
     FireProjectile(Coordinate startPos, Direction dir) 
         : GameObject(startPos), direction(dir), speed(3.0f), 
           lifetime(2.0f), maxLifetime(2.0f) {
         trail.push_back(startPos);
     }
     
+    /**
+     * @brief Update projectile position and lifetime
+     */
     void update() override {
         if (!active) return;
         
@@ -86,6 +117,11 @@ public:
         return lifetime / maxLifetime;
     }
     
+    /**
+     * @brief Check if fire hit player position
+     * @param playerPos Player coordinate to check
+     * @return true if direct hit
+     */
     bool checkPlayerHit(Coordinate playerPos) const {
         if (!active) return false;
         return position == playerPos;
